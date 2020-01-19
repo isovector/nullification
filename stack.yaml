@@ -1,0 +1,15 @@
+resolver: lts-14.0
+
+packages:
+- .
+
+extra-deps:
+- sdl2-2.5.0.0
+- '../sequoia'
+- '../FRPNow'
+- '../ecstasy'
+- cairo-0.13.6.1
+- pango-0.13.6.1
+- glib-0.13.7.1
+- gtk2hs-buildtools-0.13.5.4
+
