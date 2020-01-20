@@ -6,7 +6,7 @@ gun :: Entity
 gun = newEntity
   { eGfx = Just $ do
       pos <- query ePos
-      pure $ move pos $ filled red $ rect 2 2
+      pure $ filled red $ rect 2 2
   , eVel = Just $ V2 0 0
   , eSpeed = Just 200
   -- , eHurtboxes = Just

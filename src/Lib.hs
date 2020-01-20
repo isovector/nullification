@@ -32,7 +32,7 @@ updateGame is_down dt input = do
   emap (entsWith eScript)     $ interact_runScript dt
   emap (entsWith eVel)        $ interact_velToPos dt
   emap (entsWith eAcc)        $ interact_accToVel dt
-  emap (entsWith eControlled) $ interact_controlledByPlayer input
+  emap (entsWith eControlled) $ interact_controlledByPlayer dt input
   emap (uniqueEnt eIsCamera)  $ interact_focusCamera
 
   lasers <- efor allEnts $ do
@@ -59,11 +59,13 @@ initialize = void $ do
 
   player <- createEntity newEntity
     { ePos = Just $ V2 20 250
+    , eDirection = Just $ Radians pi
     , eVel = Just $ V2 100 0
     , eGfx = Just $ do
         pos <- query ePos
-        pure $ move pos $ filled grey $ rect 10 10
-    , eHurtboxes  = Just [Rectangle (V2 (-5) (-5)) $ V2 10 10]
+        Radians dir <- query eDirection
+        pure $ rotate (dir - pi / 2) $ move (V2 (-16) (-27)) $ toForm $ image "assets/ship.png"
+    , eHurtboxes  = Just [Rectangle (V2 (-16) (-16)) $ V2 32 32]
     , eControlled = Just ()
     , eSpeed      = Just 100
     , eTeam       = Just PlayerTeam
@@ -74,7 +76,7 @@ initialize = void $ do
     { ePos = Just $ V2 400 300
     , eGfx = Just $ do
         pos <- query ePos
-        pure $ move pos $ filled red $ circle 10
+        pure $ filled red $ circle 10
     , eHurtboxes = Just [Rectangle (V2 (-10) (-10)) $ V2 20 20]
     , eLaser = Just
         ( LaserRelPos $ V2 0 100
@@ -91,7 +93,7 @@ initialize = void $ do
     { ePos = Just $ V2 400 550
     , eGfx = Just $ do
         pos <- query ePos
-        pure $ move pos $ filled red $ circle 10
+        pure $ filled red $ circle 10
     , eScript = Just $ mconcat
         [ forever $ do
             sleep 2

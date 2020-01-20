@@ -21,6 +21,7 @@ data EntWorld f = World
   , eAcc           :: Field f V2
   , eGfx           :: Field f (Query Form)
   , eSpeed         :: Field f Double
+  -- TODO(sandy): facing
   , eDirection     :: Field f Angle
 
   , eHitboxes      :: Field f [(Box, Interaction)]

@@ -3,6 +3,7 @@ module Interactions where
 import Geometry
 import Control.Monad.Coroutine (resume)
 import Control.Monad.Coroutine.SuspensionFunctors
+import Linear.V2 (angle)
 
 
 interact_focusCamera :: Interaction
@@ -15,9 +16,6 @@ interact_focusCamera = do
   pure unchanged
     { ePos = Set focus_pos
     }
-
-
-
 
 
 interact_age :: Time -> Interaction
@@ -46,12 +44,16 @@ interact_accToVel dt = do
     }
 
 
-interact_controlledByPlayer :: V2 -> Interaction
-interact_controlledByPlayer dir = do
+interact_controlledByPlayer :: Time -> V2 -> Interaction
+interact_controlledByPlayer dt arrs = do
+  let rot_speed = 2
   with eControlled
-  speed <- query eSpeed
+  Radians facing <- query eDirection
+  speed  <- query eSpeed
+
   pure unchanged
-    { eAcc = Set $ speed *^ dir
+    { eAcc = Set $ speed * view _y arrs *^ angle facing
+    , eDirection = Set $ Radians $ facing + rot_speed * dt * view _x arrs
     }
 
 

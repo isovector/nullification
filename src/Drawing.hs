@@ -12,7 +12,9 @@ drawGame =
   ]
 
 draw_gfx :: Query Form
-draw_gfx = join $ query eGfx
+draw_gfx = do
+  pos <- query ePos
+  fmap (move pos) $ join $ query eGfx
 
 
 draw_lasers :: Query Form

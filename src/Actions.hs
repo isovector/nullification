@@ -8,14 +8,16 @@ action_blink :: (CanRunCommands m, CanRunQueries m) => m ()
 action_blink = do
   parent <- queryEnt
   parent_pos <- query ePos
+  parent_dir <- query eDirection
   parent_vel <- query eVel
   parent_gfx <- query eGfx
   command $ Spawn newEntity
     { ePos = Just parent_pos
     , eVel = Just $ parent_vel * 2
+    , eDirection = Just $ parent_dir
     , eGfx = Just $ do
         gfx <- parent_gfx
-        pure $ withAlpha 0.2 $ gfx
+        pure $ withAlpha 0.4 $ gfx
     , eScript = Just $ do
         sleep 2
         pos' <- query ePos
