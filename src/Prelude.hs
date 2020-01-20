@@ -21,7 +21,7 @@ import           Control.Monad.Trans.Class (lift)
 import           Control.Monad.Trans.Reader
 import           Control.Monad.Trans.Writer.CPS
 import qualified Data.Ecstasy as E
-import           Data.Ecstasy hiding (query, queryEnt, queryMaybe, queryDef, allEnts, newEntity)
+import           Data.Ecstasy hiding (query, queryEnt, queryMaybe, queryDef, allEnts, newEntity, queryUnique)
 import           Data.Ecstasy.Internal.Deriving
 import           Data.Ecstasy.Types
 import qualified Data.Ecstasy.Types as E
@@ -49,6 +49,9 @@ class Monad m => CanRunQueries m where
       :: (GetField c, Inverse UnderlyingMonad (Component ('WorldOf UnderlyingMonad) c a) ~ c)
       => (EntWorld ('WorldOf UnderlyingMonad) -> Component ('WorldOf UnderlyingMonad) c a)
       -> m a
+  queryUnique
+      :: (EntWorld ('WorldOf UnderlyingMonad) -> Component ('WorldOf UnderlyingMonad) 'Unique a)
+      -> m (Maybe (Ent, a))
   queryMaybe
       :: (GetField c, Inverse UnderlyingMonad (Component ('WorldOf UnderlyingMonad) c a) ~ c)
       => (EntWorld ('WorldOf UnderlyingMonad) -> Component ('WorldOf UnderlyingMonad) c a)
@@ -63,18 +66,20 @@ class Monad m => CanRunQueries m where
   focus :: Ent -> Query a -> m a
 
 instance CanRunQueries Query where
-  query      = E.query
-  queryMaybe = E.queryMaybe
-  queryDef   = E.queryDef
-  queryEnt   = E.queryEnt
-  focus e m  = E.QueryT $ local (first $ const e) $ runQueryT' m
+  query       = E.query
+  queryUnique = E.queryUnique
+  queryMaybe  = E.queryMaybe
+  queryDef    = E.queryDef
+  queryEnt    = E.queryEnt
+  focus e m   = E.QueryT $ local (first $ const e) $ runQueryT' m
 
 instance CanRunQueries Task where
-  query      = lift . E.query
-  queryMaybe = lift . E.queryMaybe
-  queryDef   = (lift .) . E.queryDef
-  queryEnt   = lift E.queryEnt
-  focus e m  = lift . E.QueryT $ local (first $ const e) $ runQueryT' m
+  query       = lift . E.query
+  queryUnique = lift . E.queryUnique
+  queryMaybe  = lift . E.queryMaybe
+  queryDef    = (lift .) . E.queryDef
+  queryEnt    = lift E.queryEnt
+  focus e m   = lift . E.QueryT $ local (first $ const e) $ runQueryT' m
 
 
 allEnts :: MonadIO m => EntTarget EntWorld m

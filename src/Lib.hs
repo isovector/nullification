@@ -17,11 +17,12 @@ import Tasks
 
 updateGame :: Time -> V2 -> Game ()
 updateGame dt input = do
-  emap (entsWith eAge) $ interact_age dt
-  emap (entsWith eScript) $ interact_runScript dt
-  emap (entsWith eVel) $ interact_velToPos dt
-  emap (entsWith eAcc) $ interact_accToVel dt
+  emap (entsWith eAge)        $ interact_age dt
+  emap (entsWith eScript)     $ interact_runScript dt
+  emap (entsWith eVel)        $ interact_velToPos dt
+  emap (entsWith eAcc)        $ interact_accToVel dt
   emap (entsWith eControlled) $ interact_controlledByPlayer input
+  emap (uniqueEnt eIsCamera)  $ interact_focusCamera
 
   lasers <- efor allEnts $ do
     pos <- query ePos
@@ -39,6 +40,11 @@ updateGame dt input = do
 
 initialize :: Game ()
 initialize = void $ do
+  void $ createEntity newEntity
+    { ePos = Just $ V2 0 0
+    , eIsCamera = Just ()
+    }
+
   player <- createEntity newEntity
     { ePos = Just $ V2 20 250
     , eVel = Just $ V2 100 0
@@ -66,9 +72,6 @@ initialize = void $ do
     , eDirection = Just 0
     , eScript = Just $ mconcat
         [ forever $ script_rotate (Radians 2) 1
-        -- , do
-        --     script_goTo (V2 0 0) 100 20
-        --     script_die
         ]
     , eTeam = Just EnemyTeam
     }
@@ -137,9 +140,11 @@ run = do
   poll $ do
     state <- sample game
     liftIO $ do
-      ((_, cameras), _) <- runWriterT $ yieldSystemT state $ efor allEnts $ do
-        with eFocused
-        query ePos
+      ((_, cameras), _) <-
+        runWriterT
+          $ yieldSystemT state
+          $ efor (uniqueEnt eIsCamera)
+          $ query ePos
       let camera = (fromMaybe 0 $ listToMaybe cameras) - V2 gameWidth gameHeight ^* 0.5
           moveGroup v2 = pure . move v2 . group
 

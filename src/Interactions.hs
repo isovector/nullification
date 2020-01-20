@@ -5,6 +5,21 @@ import Control.Monad.Coroutine (resume)
 import Control.Monad.Coroutine.SuspensionFunctors
 
 
+interact_focusCamera :: Interaction
+interact_focusCamera = do
+  with eIsCamera
+  Just (focused, _) <- queryUnique eFocused
+  -- pos <- query ePos
+  focus_pos <- focus focused $ query ePos
+
+  pure unchanged
+    { ePos = Set focus_pos
+    }
+
+
+
+
+
 interact_age :: Time -> Interaction
 interact_age dt = do
   age <- query eAge
