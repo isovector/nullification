@@ -11,13 +11,17 @@ script_rotate (Radians change) duration = do
       }
 
 
-script_goTo :: V2 -> Double -> Double -> Task ()
-script_goTo dst speed radius = do
+script_goTowards :: V2 -> Double -> Task ()
+script_goTowards dst speed = do
   src <- query ePos
   let vel = normalize (dst - src) ^* speed
   yield unchanged
     { eVel = Set vel
     }
+
+script_goTo :: V2 -> Double -> Double -> Task ()
+script_goTo dst speed radius = do
+  script_goTowards dst speed
   fix $ \loop -> do
     sleep 0.02
     pos <- query ePos

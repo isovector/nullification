@@ -10,10 +10,10 @@ gun = newEntity
   , eVel = Just $ V2 0 0
   , eSpeed = Just 200
   , eHurtboxes = Just
-      [ Rectangle (V2 (-1) (-1)) $ V2 2 2
+      [ Rectangle (V2 (-2) (-2)) $ V2 4 4
       ]
   , eHitboxes = Just
-      [ ( Rectangle (V2 (-1) (-1)) $ V2 2 2
+      [ ( Rectangle (V2 (-2) (-2)) $ V2 4 4
         , pure delEntity
         )
       ]

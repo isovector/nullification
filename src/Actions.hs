@@ -28,10 +28,11 @@ action_blink = do
 
 action_shootAt
     :: (CanRunCommands m, CanRunQueries m)
-    => Entity
+    => Time
+    -> Entity
     -> Ent
     -> m ()
-action_shootAt proto target = do
+action_shootAt lifetime proto target = do
   let speed = fromMaybe 100 $ eSpeed proto
   target_pos <- focus target $ query ePos
   parent_pos <- query ePos
@@ -40,9 +41,10 @@ action_shootAt proto target = do
     { ePos = Just parent_pos
     , eScript = mconcat
         [ eScript proto
+        , Just $ script_goTowards target_pos speed
         , Just $ do
-            script_goTo target_pos speed 5
-            yield delEntity
+            sleep lifetime
+            script_die
         ]
     }
 

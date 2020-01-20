@@ -32,6 +32,7 @@ data EntWorld f = World
 
   , eLaser         :: Field f (Laser, Interaction)
 
+  , eFocused       :: Component f 'Unique ()
   , eControlled    :: Flag f
   } deriving (Generic)
 

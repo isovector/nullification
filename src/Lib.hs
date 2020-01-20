@@ -47,6 +47,7 @@ initialize = void $ do
     , eSpeed = Just 100
     , eScript = Just action_blink
     , eTeam = Just PlayerTeam
+    , eFocused = Just ()
     }
 
   void $ createEntity newEntity
@@ -77,7 +78,7 @@ initialize = void $ do
     , eScript = Just $ mconcat
         [ forever $ do
             sleep 0.2
-            action_shootAt gun player
+            action_shootAt 4 gun player
         ]
     , eTeam = Just EnemyTeam
     }
@@ -97,7 +98,12 @@ run = do
   keyboard     <- getKeyboard
   -- old_keyboard <- sample $ delayTime clock [] keyboard
 
-  (init, init_cmds) <- liftIO $ fmap (first fst) $ runWriterT $ yieldSystemT (SystemState 0 defStorage defHooks) initialize
+  (init, init_cmds) <-
+    liftIO
+      . fmap (first fst)
+      . runWriterT
+      . yieldSystemT (SystemState 0 defStorage defHooks)
+      $ initialize
   !_ <- unless (null init_cmds) $ error "initialize ran a command!"
 
 
@@ -107,8 +113,18 @@ run = do
     -- kb     <- sample keyboard
 
     -- old_kb <- sample old_keyboard
-    (state', cmds) <- liftIO $ fmap (first fst) $ runWriterT $ yieldSystemT state $ updateGame dt arrs
-    (state'', cmds') <- liftIO $ fmap (first fst) $ runWriterT $ yieldSystemT state' $ traverse_ runCommand cmds
+    (state', cmds) <-
+      liftIO
+        . fmap (first fst)
+        . runWriterT
+        . yieldSystemT state
+        $ updateGame dt arrs
+    (state'', cmds') <-
+      liftIO
+        . fmap (first fst)
+        . runWriterT
+        . yieldSystemT state'
+        $ traverse_ runCommand cmds
     -- DEBUG
     !_ <- unless (null cmds') $ error "runCommand ran a command!"
 
@@ -117,7 +133,14 @@ run = do
 
   poll $ do
     state <- sample game
-    liftIO . fmap (collage gameWidth gameHeight . snd . fst)
+    liftIO $ do
+      ((_, cameras), _) <- runWriterT $ yieldSystemT state $ efor allEnts $ do
+        with eFocused
+        query ePos
+      let camera = (fromMaybe 0 $ listToMaybe cameras) - V2 gameWidth gameHeight ^* 0.5
+          moveGroup v2 = pure . move v2 . group
+
+      fmap (collage gameWidth gameHeight . moveGroup (-camera) . snd . fst)
            . runWriterT
            . yieldSystemT state
            . fmap join
