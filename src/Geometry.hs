@@ -71,6 +71,28 @@ rotateV2 (Radians dir) v2 = rotation !* v2
                   (V2 (sin dir) (cos dir))
 
 
+
+
+
+
+
+boxIntersectsBox :: Box -> Box -> Bool
+boxIntersectsBox
+  (Rectangle (V2 l1 t1) (V2 w1 h1))
+  (Rectangle (V2 l2 t2) (V2 w2 h2))
+  = and [ l1 < r2
+        , r1 > l2
+        , t1 < b2
+        , b1 > t2
+        ]
+  where
+    r1 = l1 + w1
+    b1 = t1 + h1
+    r2 = l2 + w2
+    b2 = t2 + h2
+
+
+
 ------------------------------------------------------------------------------
 -- | Clamp a vector.
 clamp :: V2 -> V2 -> V2 -> V2

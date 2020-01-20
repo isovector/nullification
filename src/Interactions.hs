@@ -66,6 +66,24 @@ data LaserInteraction = LaserInteraction
   }
 
 
+interact_hitbox :: [(V2, Maybe Team, [(Box, Interaction)])] -> Interaction
+interact_hitbox hitboxes = do
+  pos   <- query ePos
+  hurts <- fmap (moveBox pos) <$> query eHurtboxes
+  team  <- queryDef NeutralTeam eTeam
+  let normalized_hitboxes = do
+        (v2, t, hs) <- hitboxes
+        guard $ t /= Just team
+        fmap (uncurry (,) . first (moveBox v2)) hs
+
+  case find (\(b1, (b2, _)) -> boxIntersectsBox b1 b2)
+         . liftA2 (,) hurts
+         $ normalized_hitboxes of
+    Just (_, (_, interaction)) -> interaction
+    Nothing -> pure unchanged
+
+
+
 interact_laserDamage :: [LaserInteraction] -> Interaction
 interact_laserDamage lasers = do
   pos   <- query ePos

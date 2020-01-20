@@ -17,13 +17,11 @@ import Tasks
 
 updateGame :: Time -> V2 -> Game ()
 updateGame dt input = do
-  traverse_ (emap allEnts)
-    [ interact_age dt
-    , interact_runScript dt
-    , interact_velToPos dt
-    , interact_accToVel dt
-    , interact_controlledByPlayer input
-    ]
+  emap (entsWith eAge) $ interact_age dt
+  emap (entsWith eScript) $ interact_runScript dt
+  emap (entsWith eVel) $ interact_velToPos dt
+  emap (entsWith eAcc) $ interact_accToVel dt
+  emap (entsWith eControlled) $ interact_controlledByPlayer input
 
   lasers <- efor allEnts $ do
     pos <- query ePos
@@ -31,7 +29,12 @@ updateGame dt input = do
     dir <- queryDef 0 eDirection
     (laser, action) <- query eLaser
     pure $ LaserInteraction pos dir team laser action
-  emap allEnts $ interact_laserDamage lasers
+  emap (entsWith eHurtboxes) $ interact_laserDamage lasers
+
+
+  hitboxes <- efor allEnts $ (,,) <$> query ePos <*> queryMaybe eTeam <*> query eHitboxes
+  emap (entsWith eHurtboxes) $ interact_hitbox hitboxes
+
 
 
 initialize :: Game ()

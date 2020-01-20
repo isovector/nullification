@@ -27,6 +27,7 @@ data EntWorld f = World
   , eHurtboxes     :: Field f [Box]
   , eTeam          :: Field f Team
 
+  , eAlive         :: Flag f
   , eAge           :: Field f Time
   , eScript        :: Field f (Task ())
 
