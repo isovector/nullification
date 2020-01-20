@@ -1,26 +1,28 @@
 module Lib (main) where
 
-import Control.FRPNow hiding (when)
+import Control.FRPNow hiding (when, first)
 import Data.Ecstasy.Types
 import Game.Sequoia.Color
 import Game.Sequoia.Keyboard
 import Game.Sequoia.Time
 import Interactions
 import Prelude hiding (init)
-import Types
 import Drawing
+import Control.Monad.Trans.Writer.CPS
+import Scripts
+import Actions
 
 
 updateGame :: Time -> V2 -> Game ()
 updateGame dt input = do
-  emap allEnts $ interact_rotatingBody dt
+  emap allEnts $ interact_runScript dt
   emap allEnts $ interact_velToPos dt
   emap allEnts $ interact_accToVel dt
   emap allEnts $ interact_controlledByPlayer input
 
   lasers <- efor allEnts $ do
     pos <- query ePos
-    team <- queryDef NeutralTeam eTeam
+    team <- queryMaybe eTeam
     dir <- queryDef 0 eDirection
     (laser, action) <- query eLaser
     pure $ LaserInteraction pos dir team laser action
@@ -31,29 +33,41 @@ initialize :: Game ()
 initialize = void $ do
   _player <- createEntity newEntity
     { ePos = Just $ V2 20 250
-    , eVel = Just $ V2 0 0
+    , eVel = Just $ V2 100 0
     , eGfx = Just $ do
         pos <- query ePos
         pure $ move pos $ filled grey $ rect 10 10
     , eHurtboxes = Just [Rectangle (V2 (-5) (-5)) $ V2 10 10]
     , eControlled = Just ()
     , eSpeed = Just 100
+    , eScript = Just action_blink
     , eTeam = Just PlayerTeam
     }
 
-  createEntity newEntity
+  void $ createEntity newEntity
     { ePos = Just $ V2 400 300
     , eGfx = Just $ do
         pos <- query ePos
         pure $ move pos $ filled red $ circle 10
+    , eHurtboxes = Just [Rectangle (V2 (-10) (-10)) $ V2 20 20]
     , eLaser = Just
         ( LaserRelPos $ V2 0 100
         , pure delEntity
         )
     , eDirection = Just 0
-    , eRotationSpeed = Just $ Radians 2
+    , eScript = Just $ mconcat
+        [ forever $ script_rotate (Radians 2) 1
+        , do
+            script_goTo (V2 0 0) 100 20
+            script_die
+        ]
     , eTeam = Just EnemyTeam
     }
+
+
+runCommand :: Command -> Game ()
+runCommand (Spawn proto) = void $ createEntity proto
+runCommand (Edit ent proto) = setEntity ent proto
 
 
 run :: N (B Element)
@@ -63,30 +77,31 @@ run = do
   keyboard     <- getKeyboard
   -- old_keyboard <- sample $ delayTime clock [] keyboard
 
-  init <- liftIO $ fmap fst $ yieldSystemT (SystemState 0 defStorage defHooks) initialize
+  (init, init_cmds) <- liftIO $ fmap (first fst) $ runWriterT $ yieldSystemT (SystemState 0 defStorage defHooks) initialize
+  !_ <- unless (null init_cmds) $ error "initialize ran a command!"
+
 
   (game, _) <- foldmp init $ \state -> do
     arrs   <- sample $ arrows keyboard
     dt     <- sample clock
-    kb     <- sample keyboard
-
-    !_ <- when (elem EscapeKey kb) $ error "quit"
+    -- kb     <- sample keyboard
 
     -- old_kb <- sample old_keyboard
-    liftIO $ fmap fst $ yieldSystemT state $ updateGame dt arrs
+    (state', cmds) <- liftIO $ fmap (first fst) $ runWriterT $ yieldSystemT state $ updateGame dt arrs
+    (state'', cmds') <- liftIO $ fmap (first fst) $ runWriterT $ yieldSystemT state' $ traverse_ runCommand cmds
+    -- DEBUG
+    !_ <- unless (null cmds') $ error "runCommand ran a command!"
+
+    pure state''
+
 
   poll $ do
     state <- sample game
-    liftIO $ fmap (collage gameWidth gameHeight . snd) $ yieldSystemT state $ do
-      fmap join $ traverse (efor allEnts) drawGame
-
-
-    -- let cam = _lsCamera $ fst state
-    --     mouse' = mouse { mPos = mPos mouse + cam }
-
-    -- liftIO . fmap (collage gameWidth gameHeight)
-    --        . evalGame state
-    --        $ draw mouse'
+    liftIO . fmap (collage gameWidth gameHeight . snd . fst)
+           . runWriterT
+           . yieldSystemT state
+           . fmap join
+           $ traverse (efor allEnts) drawGame
 
 
 main :: IO ()

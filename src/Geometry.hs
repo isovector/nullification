@@ -1,6 +1,5 @@
 module Geometry where
 
-import Types
 import Linear.Matrix
 
 lineBetween :: V2 -> V2 -> Line

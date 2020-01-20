@@ -1,7 +1,8 @@
 module Interactions where
 
 import Geometry
-import Types
+import Control.Monad.Coroutine (resume)
+import Control.Monad.Coroutine.SuspensionFunctors
 
 
 interact_velToPos :: Time -> Interaction
@@ -31,23 +32,31 @@ interact_controlledByPlayer dir = do
     }
 
 
-interact_rotatingBody :: Time -> Interaction
-interact_rotatingBody dt = do
-  Radians dir <- query eDirection
-  Radians speed <- query eRotationSpeed
-  pure unchanged
-    { eDirection = Set $ Radians $ dir + speed * dt
-    }
-
+interact_runScript :: Time -> Interaction
+interact_runScript dt = do
+  script <- query eScript
+  resume script >>= \case
+    Left (Request change awaited) ->
+      pure $ case change == delEntity of
+        True -> delEntity
+        False ->
+          change
+            { eScript = Set $ awaited dt
+            }
+    Right () ->
+      pure unchanged
+        { eScript = Unset
+        }
 
 
 data LaserInteraction = LaserInteraction
   { liSrcPos      :: V2
   , liDirection   :: Angle
-  , liTeam        :: Team
+  , liTeam        :: Maybe Team
   , liLaser       :: Laser
   , liInteraction :: Interaction
   }
+
 
 interact_laserDamage :: [LaserInteraction] -> Interaction
 interact_laserDamage lasers = do
@@ -55,7 +64,7 @@ interact_laserDamage lasers = do
   hurts <- fmap (moveBox pos) <$> query eHurtboxes
   team  <- queryDef NeutralTeam eTeam
 
-  case find (flip any hurts . laserIntersection) $ filter ((/= team) . liTeam) lasers of
+  case find (flip any hurts . laserIntersection) $ filter ((/= Just team) . liTeam) lasers of
     Just x  -> liInteraction x
     Nothing -> pure unchanged
 

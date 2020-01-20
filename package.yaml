@@ -30,6 +30,7 @@ dependencies:
 - linear
 - frpnow
 - ecstasy
+- monad-coroutine
 
 default-extensions:
 - DataKinds
@@ -50,6 +51,7 @@ default-extensions:
 - DeriveTraversable
 - DeriveFunctor
 - BangPatterns
+- FlexibleInstances
 
 library:
   source-dirs: src

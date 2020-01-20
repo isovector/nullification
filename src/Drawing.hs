@@ -1,6 +1,5 @@
 module Drawing (drawGame) where
 
-import Types
 import Geometry
 import Game.Sequoia.Color
 
