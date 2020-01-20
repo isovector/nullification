@@ -57,12 +57,25 @@ initialize = void $ do
         }
   void $ createEntity cameraProto
 
+  let wall = newEntity
+        { eGfx = Just $ pure $ toForm $ image "assets/wall.png"
+        , eHitboxes  = Just [(Rectangle (V2 0 0) $ V2 128 128, pure delEntity)]
+        }
+  void $ createEntity wall
+    { ePos = Just $ V2 600 0
+    }
+  void $ createEntity wall
+    { ePos = Just $ V2 600 127
+    }
+  void $ createEntity wall
+    { ePos = Just $ V2 600 254
+    }
+
   player <- createEntity newEntity
     { ePos = Just $ V2 20 250
     , eDirection = Just $ Radians pi
     , eVel = Just $ V2 100 0
     , eGfx = Just $ do
-        pos <- query ePos
         Radians dir <- query eDirection
         pure $ rotate (dir - pi / 2) $ move (V2 (-16) (-27)) $ toForm $ image "assets/ship.png"
     , eHurtboxes  = Just [Rectangle (V2 (-16) (-16)) $ V2 32 32]
@@ -75,9 +88,8 @@ initialize = void $ do
   void $ createEntity newEntity
     { ePos = Just $ V2 400 300
     , eGfx = Just $ do
-        pos <- query ePos
-        pure $ filled red $ circle 10
-    , eHurtboxes = Just [Rectangle (V2 (-10) (-10)) $ V2 20 20]
+        pure $ move (V2 (-32) (-32)) $ toForm $ image "assets/station.png"
+    , eHurtboxes = Just [Rectangle (V2 (-32) (-32)) $ V2 64 64]
     , eLaser = Just
         ( LaserRelPos $ V2 0 100
         , pure delEntity
@@ -92,7 +104,6 @@ initialize = void $ do
   void $ createEntity newEntity
     { ePos = Just $ V2 400 550
     , eGfx = Just $ do
-        pos <- query ePos
         pure $ filled red $ circle 10
     , eScript = Just $ mconcat
         [ forever $ do
@@ -162,11 +173,14 @@ run = do
       let camera = (fromMaybe 0 $ listToMaybe cameras) - V2 gameWidth gameHeight ^* 0.5
           moveGroup v2 = pure . move v2 . group
 
-      fmap (collage gameWidth gameHeight . moveGroup (-camera) . snd . fst)
-           . runWriterT
+      ((_, forms), _) <-
+        runWriterT
            . yieldSystemT state
            . fmap join
            $ traverse (efor allEnts) drawGame
+      pure $ collage gameWidth gameHeight
+           . (toForm (image "assets/space.png") :)
+           $ moveGroup (-camera) forms
 
 
 main :: IO ()
