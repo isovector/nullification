@@ -26,6 +26,15 @@ action_blink = do
     }
 
 
+action_stop :: (CanRunCommands m, CanRunQueries m) => m ()
+action_stop = do
+  ent <- queryEnt
+  command $ Edit ent unchanged
+    { eVel = Set 0
+    }
+
+
+
 action_shootAt
     :: (CanRunCommands m, CanRunQueries m)
     => Time

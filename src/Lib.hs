@@ -15,8 +15,19 @@ import GameData
 import Tasks
 
 
-updateGame :: Time -> V2 -> Game ()
-updateGame dt input = do
+runPlayerScript :: Query () -> Game ()
+runPlayerScript t = void $ efor (entsWith eControlled) t
+
+
+updateGame :: (Key -> Bool) -> Time -> V2 -> Game ()
+updateGame is_down dt input = do
+  traverse_ (\(key, script) ->
+                when (is_down key) $
+                  runPlayerScript script)
+    [ (EKey, action_blink)
+    , (ZKey, action_stop)
+    ]
+
   emap (entsWith eAge)        $ interact_age dt
   emap (entsWith eScript)     $ interact_runScript dt
   emap (entsWith eVel)        $ interact_velToPos dt
@@ -40,10 +51,11 @@ updateGame dt input = do
 
 initialize :: Game ()
 initialize = void $ do
-  void $ createEntity newEntity
-    { ePos = Just $ V2 0 0
-    , eIsCamera = Just ()
-    }
+  let cameraProto = newEntity
+        { ePos      = Just $ V2 0 0
+        , eIsCamera = Just ()
+        }
+  void $ createEntity cameraProto
 
   player <- createEntity newEntity
     { ePos = Just $ V2 20 250
@@ -51,12 +63,11 @@ initialize = void $ do
     , eGfx = Just $ do
         pos <- query ePos
         pure $ move pos $ filled grey $ rect 10 10
-    , eHurtboxes = Just [Rectangle (V2 (-5) (-5)) $ V2 10 10]
+    , eHurtboxes  = Just [Rectangle (V2 (-5) (-5)) $ V2 10 10]
     , eControlled = Just ()
-    , eSpeed = Just 100
-    , eScript = Just action_blink
-    , eTeam = Just PlayerTeam
-    , eFocused = Just ()
+    , eSpeed      = Just 100
+    , eTeam       = Just PlayerTeam
+    , eFocused    = Just ()
     }
 
   void $ createEntity newEntity
@@ -83,7 +94,7 @@ initialize = void $ do
         pure $ move pos $ filled red $ circle 10
     , eScript = Just $ mconcat
         [ forever $ do
-            sleep 0.2
+            sleep 2
             action_shootAt 4 gun player
         ]
     , eTeam = Just EnemyTeam
@@ -102,7 +113,7 @@ run = do
   clock <- deltaTime <$> getClock
 
   keyboard     <- getKeyboard
-  -- old_keyboard <- sample $ delayTime clock [] keyboard
+  old_keyboard <- sample $ delayTime clock [] keyboard
 
   (init, init_cmds) <-
     liftIO
@@ -116,15 +127,16 @@ run = do
   (game, _) <- foldmp init $ \state -> do
     arrs   <- sample $ arrows keyboard
     dt     <- sample clock
-    -- kb     <- sample keyboard
+    kb     <- sample keyboard
+    old_kb <- sample old_keyboard
+    let is_down k = elem k kb && not (elem k old_kb)
 
-    -- old_kb <- sample old_keyboard
     (state', cmds) <-
       liftIO
         . fmap (first fst)
         . runWriterT
         . yieldSystemT state
-        $ updateGame dt arrs
+        $ updateGame is_down dt arrs
     (state'', cmds') <-
       liftIO
         . fmap (first fst)
