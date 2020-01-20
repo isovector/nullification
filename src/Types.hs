@@ -27,6 +27,7 @@ data EntWorld f = World
   , eHurtboxes     :: Field f [Box]
   , eTeam          :: Field f Team
 
+  , eAge           :: Field f Time
   , eScript        :: Field f (Task ())
 
   , eLaser         :: Field f (Laser, Interaction)

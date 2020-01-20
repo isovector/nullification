@@ -5,6 +5,14 @@ import Control.Monad.Coroutine (resume)
 import Control.Monad.Coroutine.SuspensionFunctors
 
 
+interact_age :: Time -> Interaction
+interact_age dt = do
+  age <- query eAge
+  pure unchanged
+    { eAge = Set $ age + dt
+    }
+
+
 interact_velToPos :: Time -> Interaction
 interact_velToPos dt = do
   pos <- query ePos

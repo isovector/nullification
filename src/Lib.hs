@@ -11,14 +11,19 @@ import Drawing
 import Control.Monad.Trans.Writer.CPS
 import Scripts
 import Actions
+import GameData
+import Tasks
 
 
 updateGame :: Time -> V2 -> Game ()
 updateGame dt input = do
-  emap allEnts $ interact_runScript dt
-  emap allEnts $ interact_velToPos dt
-  emap allEnts $ interact_accToVel dt
-  emap allEnts $ interact_controlledByPlayer input
+  traverse_ (emap allEnts)
+    [ interact_age dt
+    , interact_runScript dt
+    , interact_velToPos dt
+    , interact_accToVel dt
+    , interact_controlledByPlayer input
+    ]
 
   lasers <- efor allEnts $ do
     pos <- query ePos
@@ -31,7 +36,7 @@ updateGame dt input = do
 
 initialize :: Game ()
 initialize = void $ do
-  _player <- createEntity newEntity
+  player <- createEntity newEntity
     { ePos = Just $ V2 20 250
     , eVel = Just $ V2 100 0
     , eGfx = Just $ do
@@ -57,12 +62,27 @@ initialize = void $ do
     , eDirection = Just 0
     , eScript = Just $ mconcat
         [ forever $ script_rotate (Radians 2) 1
-        , do
-            script_goTo (V2 0 0) 100 20
-            script_die
+        -- , do
+        --     script_goTo (V2 0 0) 100 20
+        --     script_die
         ]
     , eTeam = Just EnemyTeam
     }
+
+  void $ createEntity newEntity
+    { ePos = Just $ V2 400 550
+    , eGfx = Just $ do
+        pos <- query ePos
+        pure $ move pos $ filled red $ circle 10
+    , eScript = Just $ mconcat
+        [ forever $ do
+            sleep 0.2
+            action_shootAt gun player
+        ]
+    , eTeam = Just EnemyTeam
+    }
+
+
 
 
 runCommand :: Command -> Game ()

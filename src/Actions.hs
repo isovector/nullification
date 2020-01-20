@@ -1,7 +1,8 @@
 module Actions where
 
-import Game.Sequoia.Color
 import Tasks
+import Scripts
+
 
 action_blink :: (CanRunCommands m, CanRunQueries m) => m ()
 action_blink = do
@@ -22,5 +23,26 @@ action_blink = do
           { ePos = Set pos'
           }
         yield delEntity
+    }
+
+
+action_shootAt
+    :: (CanRunCommands m, CanRunQueries m)
+    => Entity
+    -> Ent
+    -> m ()
+action_shootAt proto target = do
+  let speed = fromMaybe 100 $ eSpeed proto
+  target_pos <- focus target $ query ePos
+  parent_pos <- query ePos
+
+  command $ Spawn proto
+    { ePos = Just parent_pos
+    , eScript = mconcat
+        [ eScript proto
+        , Just $ do
+            script_goTo target_pos speed 5
+            yield delEntity
+        ]
     }
 
