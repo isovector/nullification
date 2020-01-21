@@ -52,7 +52,7 @@ interact_controlledByPlayer dt arrs = do
   speed  <- query eSpeed
 
   pure unchanged
-    { eAcc = Set $ speed * view _y arrs *^ angle facing
+    { eAcc = Set $ negate $ speed * view _y arrs *^ angle facing
     , eDirection = Set $ Radians $ facing + rot_speed * dt * view _x arrs
     }
 

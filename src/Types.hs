@@ -31,6 +31,7 @@ data EntWorld f = World
   , eAlive         :: Flag f
   , eAge           :: Field f Time
   , eScript        :: Field f (Task ())
+  , eSpecialThing  :: Field f SpecialThing
 
   , eLaser         :: Field f (Laser, Interaction)
 
@@ -95,5 +96,13 @@ data Command
   | Edit Ent (EntWorld 'SetterOf)
 
 newtype Progress = Progress Double
+  deriving (Eq, Ord, Show)
+
+data SpecialThing
+  = BlinkFor Ent
+  deriving (Eq, Ord, Show)
+
+
+data Keystate = Press | Down | Up | Unpress
   deriving (Eq, Ord, Show)
 

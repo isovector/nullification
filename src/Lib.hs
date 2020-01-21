@@ -19,10 +19,10 @@ runPlayerScript :: Query () -> Game ()
 runPlayerScript t = void $ efor (entsWith eControlled) t
 
 
-updateGame :: (Key -> Bool) -> Time -> V2 -> Game ()
-updateGame is_down dt input = do
+updateGame :: (Key -> Keystate) -> Time -> V2 -> Game ()
+updateGame keystate dt input = do
   traverse_ (\(key, script) ->
-                when (is_down key) $
+                when (keystate key == Press) $
                   runPlayerScript script)
     [ (EKey, action_blink)
     , (ZKey, action_stop)
@@ -73,11 +73,11 @@ initialize = void $ do
 
   player <- createEntity newEntity
     { ePos = Just $ V2 20 250
-    , eDirection = Just $ Radians pi
+    , eDirection = Just $ Radians 0
     , eVel = Just $ V2 100 0
     , eGfx = Just $ do
         Radians dir <- query eDirection
-        pure $ rotate (dir - pi / 2) $ move (V2 (-16) (-27)) $ toForm $ image "assets/ship.png"
+        pure $ rotate dir $ move (V2 (-27) (-16)) $ toForm $ image "assets/ship.png"
     , eHurtboxes  = Just [Rectangle (V2 (-16) (-16)) $ V2 32 32]
     , eControlled = Just ()
     , eSpeed      = Just 100
@@ -142,14 +142,14 @@ run = do
     dt     <- sample clock
     kb     <- sample keyboard
     old_kb <- sample old_keyboard
-    let is_down k = elem k kb && not (elem k old_kb)
+    let keystate   k = getKeystate (elem k old_kb) $ elem k kb
 
     (state', cmds) <-
       liftIO
         . fmap (first fst)
         . runWriterT
         . yieldSystemT state
-        $ updateGame is_down dt arrs
+        $ updateGame keystate dt arrs
     (state'', cmds') <-
       liftIO
         . fmap (first fst)
@@ -181,6 +181,13 @@ run = do
       pure $ collage gameWidth gameHeight
            . (toForm (image "assets/space.png") :)
            $ moveGroup (-camera) forms
+
+
+getKeystate :: Bool -> Bool -> Keystate
+getKeystate False False = Up
+getKeystate False True = Press
+getKeystate True True = Down
+getKeystate True False = Unpress
 
 
 main :: IO ()

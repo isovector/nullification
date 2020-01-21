@@ -100,3 +100,4 @@ clamp (V2 lx ly) (V2 ux uy) (V2 x y) = V2 (clamp' lx ux x) (clamp' ly uy y)
 
 clamp' :: Ord a => a -> a -> a -> a
 clamp' l u z = min u $ max l z
+

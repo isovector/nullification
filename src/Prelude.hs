@@ -13,7 +13,7 @@ module Prelude
   , request
   ) where
 
-import           BasePrelude hiding (group, rotate, lazy, index, uncons, loop, inRange, yield)
+import           BasePrelude hiding (group, rotate, lazy, index, uncons, loop, inRange, yield, Down (..))
 import           Control.Lens hiding (without, op, over)
 import           Control.Monad.Coroutine.SuspensionFunctors (request)
 import           Control.Monad.IO.Class (MonadIO (..))
