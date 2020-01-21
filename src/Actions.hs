@@ -11,26 +11,31 @@ action_blink = do
       blink_time  = 0.5
 
   parent <- queryEnt
-  parent_pos <- query ePos
-  parent_dir <- query eDirection
-  parent_vel <- query eVel
-  parent_gfx <- query eGfx
-  command $ Spawn newEntity
-    { ePos = Just parent_pos
-    , eVel = Just $ parent_vel + rotateV2 parent_dir (V2 blink_speed 0)
-    , eDirection = Just $ parent_dir
-    , eGfx = Just $ do
-        gfx <- parent_gfx
-        pure $ withAlpha 0.4 $ gfx
-    , eScript = Just $ do
-        sleep blink_time
-        pos' <- query ePos
-        command $ Edit parent unchanged
-          { ePos = Set pos'
-          }
-        yield delEntity
-    , eSpecialThing = Just $ BlinkFor parent
-    }
+  other_blinks <- subquery (entsWith eSpecialThing) $ do
+    BlinkFor ent <- query eSpecialThing
+    guard $ parent == ent
+
+  when (null other_blinks) $ do
+    parent_pos <- query ePos
+    parent_dir <- query eDirection
+    parent_vel <- query eVel
+    parent_gfx <- query eGfx
+    command $ Spawn newEntity
+      { ePos = Just parent_pos
+      , eVel = Just $ parent_vel + rotateV2 parent_dir (V2 blink_speed 0)
+      , eDirection = Just $ parent_dir
+      , eGfx = Just $ do
+          gfx <- parent_gfx
+          pure $ withAlpha 0.4 $ gfx
+      , eScript = Just $ do
+          sleep blink_time
+          pos' <- query ePos
+          command $ Edit parent unchanged
+            { ePos = Set pos'
+            }
+          yield delEntity
+      , eSpecialThing = Just $ BlinkFor parent
+      }
 
 
 action_stop :: (CanRunCommands m, CanRunQueries m) => m ()

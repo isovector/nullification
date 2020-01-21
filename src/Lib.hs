@@ -16,7 +16,7 @@ import Tasks
 
 
 runPlayerScript :: Query () -> Game ()
-runPlayerScript t = void $ efor (entsWith eControlled) t
+runPlayerScript = void . efor (entsWith eControlled)
 
 
 updateGame :: (Key -> Keystate) -> Time -> V2 -> Game ()

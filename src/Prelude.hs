@@ -21,7 +21,7 @@ import           Control.Monad.Trans.Class (lift)
 import           Control.Monad.Trans.Reader
 import           Control.Monad.Trans.Writer.CPS
 import qualified Data.Ecstasy as E
-import           Data.Ecstasy hiding (query, queryEnt, queryMaybe, queryDef, allEnts, newEntity, queryUnique)
+import           Data.Ecstasy hiding (query, queryEnt, queryMaybe, queryDef, allEnts, newEntity, queryUnique, queryTarget, subquery)
 import           Data.Ecstasy.Internal.Deriving
 import           Data.Ecstasy.Types
 import qualified Data.Ecstasy.Types as E
@@ -46,7 +46,7 @@ instance CanRunCommands Task where
 
 class Monad m => CanRunQueries m where
   query
-      :: (GetField c, Inverse UnderlyingMonad (Component ('WorldOf UnderlyingMonad) c a) ~ c)
+      :: ( GetField c, Inverse UnderlyingMonad (Component ('WorldOf UnderlyingMonad) c a) ~ c)
       => (EntWorld ('WorldOf UnderlyingMonad) -> Component ('WorldOf UnderlyingMonad) c a)
       -> m a
   queryUnique
@@ -63,22 +63,32 @@ class Monad m => CanRunQueries m where
       -> m a
   queryEnt
       :: m Ent
+  queryTarget
+      :: EntTarget EntWorld UnderlyingMonad -> m [Ent]
+  subquery
+      :: EntTarget EntWorld UnderlyingMonad
+      -> Query a
+      -> m [a]
   focus :: Ent -> Query a -> m a
 
 instance CanRunQueries Query where
   query       = E.query
+  subquery    = E.subquery
   queryUnique = E.queryUnique
   queryMaybe  = E.queryMaybe
   queryDef    = E.queryDef
   queryEnt    = E.queryEnt
+  queryTarget = E.queryTarget
   focus e m   = E.QueryT $ local (first $ const e) $ runQueryT' m
 
 instance CanRunQueries Task where
   query       = lift . E.query
+  subquery    = (lift .) . E.subquery
   queryUnique = lift . E.queryUnique
   queryMaybe  = lift . E.queryMaybe
   queryDef    = (lift .) . E.queryDef
   queryEnt    = lift E.queryEnt
+  queryTarget = lift . E.queryTarget
   focus e m   = lift . E.QueryT $ local (first $ const e) $ runQueryT' m
 
 
