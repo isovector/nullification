@@ -5,6 +5,7 @@ import Scripts
 import Geometry
 
 
+-- Runs for the using entity
 action_blink :: (CanRunCommands m, CanRunQueries m) => m ()
 action_blink = do
   let blink_speed = 100
@@ -29,13 +30,41 @@ action_blink = do
           pure $ withAlpha 0.4 $ gfx
       , eScript = Just $ do
           sleep blink_time
-          pos' <- query ePos
-          command $ Edit parent unchanged
-            { ePos = Set pos'
-            }
-          yield delEntity
+          action_blink_finish
       , eSpecialThing = Just $ BlinkFor parent
       }
+
+
+-- Runs for the using entity
+-- TODO(sandy): This is disgusting, and does some trickery to switch from the
+-- player's query context into the blink entity's
+action_blink_unpress :: (CanRunCommands m, CanRunQueries m) => m ()
+action_blink_unpress = do
+  parent <- queryEnt
+  -- Find the entity which is the BlinkFor this entity
+  blinks <- subquery (entsWith eSpecialThing) $ do
+    ent <- queryEnt
+    BlinkFor ent_parent <- query eSpecialThing
+    guard $ parent == ent_parent
+    pure ent
+  void $ subquery (someEnts blinks) action_blink_finish
+
+
+
+-- Runs for the blink entity
+action_blink_finish :: (CanRunCommands m, CanRunQueries m) => m ()
+action_blink_finish = do
+  ent <- queryEnt
+  BlinkFor parent <- query eSpecialThing
+  pos' <- query ePos
+  commands
+    [ Edit parent unchanged
+        { ePos = Set pos'
+        }
+    , Edit ent delEntity
+    ]
+
+
 
 
 action_stop :: (CanRunCommands m, CanRunQueries m) => m ()

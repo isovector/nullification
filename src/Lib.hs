@@ -21,11 +21,12 @@ runPlayerScript = void . efor (entsWith eControlled)
 
 updateGame :: (Key -> Keystate) -> Time -> V2 -> Game ()
 updateGame keystate dt input = do
-  traverse_ (\(key, script) ->
-                when (keystate key == Press) $
+  traverse_ (\(state, key, script) ->
+                when (keystate key == state) $
                   runPlayerScript script)
-    [ (EKey, action_blink)
-    , (ZKey, action_stop)
+    [ (Press, EKey, action_blink)
+    , (Unpress, EKey, action_blink_unpress)
+    , (Press, ZKey, action_stop)
     ]
 
   emap (entsWith eAge)        $ interact_age dt

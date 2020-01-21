@@ -32,16 +32,19 @@ import           Types
 
 
 class CanRunCommands m where
-  command :: Command -> m ()
+  commands :: [Command] -> m ()
 
 instance CanRunCommands Query where
-  command = lift . tell . pure
+  commands = lift . tell
 
 instance CanRunCommands Game where
-  command = lift . tell . pure
+  commands = lift . tell
 
 instance CanRunCommands Task where
-  command = lift . command
+  commands = lift . commands
+
+command :: CanRunCommands m => Command -> m ()
+command = commands . pure
 
 
 class Monad m => CanRunQueries m where
