@@ -50,6 +50,26 @@ updateGame keystate dt input = do
   emap (entsWith eHurtboxes) $ interact_hitbox hitboxes
 
 
+minimapScale :: Num a => a
+minimapScale = 32
+
+
+draw_minimapBlip :: Query Form
+draw_minimapBlip = do
+  pos           <- query ePos
+  (color, size) <- query eOnMinimap
+  let size' = size * minimapScale
+  pure $ move pos $ filled color $ rect size' size'
+
+
+draw_minimap :: V2 -> Game Form
+draw_minimap camera = do
+  forms <- efor (entsWith eOnMinimap) draw_minimapBlip
+  let minimap = scale (1 / minimapScale) $ move (-camera) $  group forms
+  pure minimap
+
+
+
 resetGame :: Game ()
 resetGame = do
   ref <- SystemT R.ask
@@ -67,16 +87,17 @@ initialize = void $ do
 
   player <- createEntity newEntity
     { ePos = Just $ V2 512 (-500)
+    , eOrigin = Just $ V2 27 16
     , eDirection = Just $ Radians $ pi / 2
     , eVel = Just $ V2 0 100
     , eGfx = Just $ do
-        Radians dir <- query eDirection
-        pure $ rotate dir $ move (V2 (-27) (-16)) $ toForm $ image "assets/ship.png"
+        pure $ toForm $ image "assets/ship.png"
     , eHurtboxes  = Just [Rectangle (V2 (-16) (-16)) $ V2 32 32]
     , eControlled = Just ()
     , eSpeed      = Just 100
     , eTeam       = Just PlayerTeam
     , eFocused    = Just ()
+    , eOnMinimap = Just (green, 3)
     }
 
   let mkWall x y =
@@ -107,7 +128,7 @@ initialize = void $ do
 
   let mkTurret x y =
         void $ createEntity (turret player)
-          { ePos = Just $ V2 (x * 128 + 64) (y * 128 + 64)
+          { ePos = Just $ V2 (x * 128) (y * 128)
           }
 
   traverse_ (uncurry mkTurret) $ (,) <$> [1.75, 2.25, 4.75, 5.25] <*> [-1, 1]
@@ -123,8 +144,8 @@ initialize = void $ do
         }
       mkLaserFence x1 y1 x2 y2 =
         void $ createEntity $
-          laserFence (V2 (x1 * 128 + 64) (y1 * 128 + 64))
-                     (V2 (x2 * 128 + 64) (y2 * 128 + 64))
+          laserFence (V2 (x1 * 128) (y1 * 128))
+                     (V2 (x2 * 128) (y2 * 128))
   traverse_ (\(x, y) -> mkLaserFence x y (x + 3) y) $ (,) <$> [2, 13] <*> [-0.1, 0.1]
 
 
@@ -187,13 +208,16 @@ run = do
       let camera = (fromMaybe 0 $ listToMaybe cameras) - V2 gameWidth gameHeight ^* 0.5
           moveGroup v2 = pure . move v2 . group
 
-      ((_, forms), _) <-
+      ((_, (forms, minimap)), _) <-
         runWriterT
            . yieldSystemT state
-           . fmap join
-           $ traverse (efor allEnts) drawGame
+           $ do
+        gfxs <- join <$> traverse (efor allEnts) drawGame
+        minimap <- draw_minimap camera
+        pure (gfxs, minimap)
       pure $ collage gameWidth gameHeight
            . (toForm (image "assets/space.png") :)
+           . (++ [move (V2 32 (600 - 64)) minimap])
            -- . fmap (scale 0.2)
            $ moveGroup (-camera) forms
 

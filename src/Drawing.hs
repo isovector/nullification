@@ -14,7 +14,9 @@ drawGame =
 draw_gfx :: Query Form
 draw_gfx = do
   pos <- query ePos
-  fmap (move pos) $ join $ query eGfx
+  origin <- queryDef 0 eOrigin
+  Radians dir <- queryDef (Radians 0) eDirection
+  fmap (move pos . rotate dir . move (- origin)) $ join $ query eGfx
 
 
 draw_lasers :: Query Form

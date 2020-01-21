@@ -19,10 +19,12 @@ data EntWorld f = World
   { ePos           :: Field f V2
   , eVel           :: Field f V2
   , eAcc           :: Field f V2
-  , eGfx           :: Field f (Query Form)
   , eSpeed         :: Field f Double
   -- TODO(sandy): facing
   , eDirection     :: Field f Angle
+
+  , eOrigin        :: Field f V2
+  , eGfx           :: Field f (Query Form)
 
   , eHitboxes      :: Field f [(Box, Interaction)]
   , eHurtboxes     :: Field f [Box]
@@ -34,6 +36,8 @@ data EntWorld f = World
   , eSpecialThing  :: Field f SpecialThing
 
   , eLaser         :: Field f (Laser, Interaction)
+
+  , eOnMinimap     :: Field f (Color, Double)
 
   , eFocused       :: Component f 'Unique ()
   , eIsCamera      :: Component f 'Unique ()

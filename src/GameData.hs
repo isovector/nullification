@@ -24,7 +24,9 @@ gun = newEntity
 wall :: Entity
 wall = newEntity
   { eGfx = Just $ pure $ toForm $ image "assets/wall.png"
-  , eHitboxes  = Just [(Rectangle (V2 0 0) $ V2 128 128, pure delEntity)]
+  , eOrigin = Just 64
+  , eHitboxes  = Just [(Rectangle (-64) 126, pure delEntity)]
+  , eOnMinimap = Just (grey, 4)
   }
 
 
@@ -37,5 +39,7 @@ turret player = newEntity
           sleep 0.5
           action_shootAt 2 gun player
       ]
+  , eHurtboxes = Just [Rectangle (-10) 20]
   , eTeam = Just EnemyTeam
+  , eOnMinimap = Just (red, 1.5)
   }
