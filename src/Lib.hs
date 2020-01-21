@@ -9,10 +9,8 @@ import Interactions
 import Prelude hiding (init)
 import Drawing
 import Control.Monad.Trans.Writer.CPS
-import Scripts
 import Actions
 import GameData
-import Tasks
 import qualified Control.Monad.Trans.Reader as R
 
 
@@ -67,24 +65,10 @@ initialize = void $ do
         }
   void $ createEntity cameraProto
 
-  let wall = newEntity
-        { eGfx = Just $ pure $ toForm $ image "assets/wall.png"
-        , eHitboxes  = Just [(Rectangle (V2 0 0) $ V2 128 128, pure delEntity)]
-        }
-  void $ createEntity wall
-    { ePos = Just $ V2 600 0
-    }
-  void $ createEntity wall
-    { ePos = Just $ V2 600 127
-    }
-  void $ createEntity wall
-    { ePos = Just $ V2 600 254
-    }
-
   player <- createEntity newEntity
-    { ePos = Just $ V2 20 250
-    , eDirection = Just $ Radians 0
-    , eVel = Just $ V2 100 0
+    { ePos = Just $ V2 512 (-500)
+    , eDirection = Just $ Radians $ pi / 2
+    , eVel = Just $ V2 0 100
     , eGfx = Just $ do
         Radians dir <- query eDirection
         pure $ rotate dir $ move (V2 (-27) (-16)) $ toForm $ image "assets/ship.png"
@@ -95,33 +79,53 @@ initialize = void $ do
     , eFocused    = Just ()
     }
 
-  void $ createEntity newEntity
-    { ePos = Just $ V2 400 300
-    , eGfx = Just $ do
-        pure $ move (V2 (-32) (-32)) $ toForm $ image "assets/station.png"
-    , eHurtboxes = Just [Rectangle (V2 (-32) (-32)) $ V2 64 64]
-    -- , eLaser = Just
-    --     ( LaserRelPos $ V2 0 100
-    --     , pure delEntity
-    --     )
-    , eDirection = Just 0
-    , eScript = Just $ mconcat
-        [ forever $ script_rotate (Radians 2) 1
-        ]
-    , eTeam = Just EnemyTeam
-    }
+  let mkWall x y =
+        void $ createEntity wall
+          { ePos = Just $ V2 (x * 127) (y * 127)
+          }
 
-  void $ createEntity newEntity
-    { ePos = Just $ V2 400 550
-    , eGfx = Just $ do
-        pure $ filled red $ circle 10
-    , eScript = Just $ mconcat
-        [ forever $ do
-            sleep 2
-            action_shootAt 4 gun player
-        ]
-    , eTeam = Just EnemyTeam
-    }
+
+  for_ [-3..2] $ \x -> mkWall x 0
+
+  traverse_ (uncurry mkWall) $ (,) <$> [-3, 21] <*> [0..10]
+
+  for_ [5..13] $ \x -> mkWall x 0
+  for_ [16..21] $ \x -> mkWall x 0
+
+  mkWall (-1) 5
+  mkWall 19 5
+
+  for_ [2..7] $ \x -> mkWall x 6
+  for_ [11..16] $ \x -> mkWall x 7
+  mkWall 2 7
+  mkWall 2 8
+  mkWall 16 8
+  mkWall 16 9
+
+  for_ [2..9] $ \x -> mkWall x 9
+  for_ [9..16] $ \x -> mkWall x 10
+
+  let mkTurret x y =
+        void $ createEntity (turret player)
+          { ePos = Just $ V2 (x * 128 + 64) (y * 128 + 64)
+          }
+
+  traverse_ (uncurry mkTurret) $ (,) <$> [1.75, 2.25, 4.75, 5.25] <*> [-1, 1]
+  traverse_ (uncurry mkTurret) $ (,) <$> (fmap (11 +) [1.75, 2.25, 4.75, 5.25]) <*> [-1, 1]
+
+  let laserFence src dst = newEntity
+        { ePos = Just src
+        , eLaser = Just
+            ( LaserAbsPos dst
+            , pure delEntity
+            )
+        -- , eTeam = Just EnemyTeam
+        }
+      mkLaserFence x1 y1 x2 y2 =
+        void $ createEntity $
+          laserFence (V2 (x1 * 128 + 64) (y1 * 128 + 64))
+                     (V2 (x2 * 128 + 64) (y2 * 128 + 64))
+  traverse_ (\(x, y) -> mkLaserFence x y (x + 3) y) $ (,) <$> [2, 13] <*> [-0.1, 0.1]
 
 
 
@@ -190,6 +194,7 @@ run = do
            $ traverse (efor allEnts) drawGame
       pure $ collage gameWidth gameHeight
            . (toForm (image "assets/space.png") :)
+           -- . fmap (scale 0.2)
            $ moveGroup (-camera) forms
 
 

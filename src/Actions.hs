@@ -86,17 +86,22 @@ action_shootAt lifetime proto target = do
   let speed = fromMaybe 100 $ eSpeed proto
   target_pos <- focus target $ query ePos
   parent_pos <- query ePos
-  parent_team <- queryMaybe eTeam
 
-  command $ Spawn proto
-    { ePos = Just parent_pos
-    , eTeam = parent_team
-    , eScript = mconcat
-        [ eScript proto
-        , Just $ script_goTowards target_pos speed
-        , Just $ do
-            sleep lifetime
-            script_die
-        ]
-    }
+  -- Only shoot if you're in range
+  case (quadrance (target_pos - parent_pos) <= (speed * lifetime) * (speed * lifetime)) of
+    False -> pure ()
+    True -> do
+      parent_team <- queryMaybe eTeam
+
+      command $ Spawn proto
+        { ePos = Just parent_pos
+        , eTeam = parent_team
+        , eScript = mconcat
+            [ eScript proto
+            , Just $ script_goTowards target_pos speed
+            , Just $ do
+                sleep lifetime
+                script_die
+            ]
+        }
 
