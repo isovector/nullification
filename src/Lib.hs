@@ -13,6 +13,7 @@ import Scripts
 import Actions
 import GameData
 import Tasks
+import qualified Control.Monad.Trans.Reader as R
 
 
 runPlayerScript :: Query () -> Game ()
@@ -28,6 +29,8 @@ updateGame keystate dt input = do
     , (Unpress, EKey, action_blink_unpress)
     , (Press, ZKey, action_stop)
     ]
+
+  when (keystate RKey == Press && keystate LeftShiftKey == Down) resetGame
 
   emap (entsWith eAge)        $ interact_age dt
   emap (entsWith eScript)     $ interact_runScript dt
@@ -48,6 +51,12 @@ updateGame keystate dt input = do
   hitboxes <- efor allEnts $ (,,) <$> query ePos <*> queryMaybe eTeam <*> query eHitboxes
   emap (entsWith eHurtboxes) $ interact_hitbox hitboxes
 
+
+resetGame :: Game ()
+resetGame = do
+  ref <- SystemT R.ask
+  liftIO $ writeIORef ref $ SystemState 0 defStorage defHooks
+  initialize
 
 
 initialize :: Game ()
@@ -91,10 +100,10 @@ initialize = void $ do
     , eGfx = Just $ do
         pure $ move (V2 (-32) (-32)) $ toForm $ image "assets/station.png"
     , eHurtboxes = Just [Rectangle (V2 (-32) (-32)) $ V2 64 64]
-    , eLaser = Just
-        ( LaserRelPos $ V2 0 100
-        , pure delEntity
-        )
+    -- , eLaser = Just
+    --     ( LaserRelPos $ V2 0 100
+    --     , pure delEntity
+    --     )
     , eDirection = Just 0
     , eScript = Just $ mconcat
         [ forever $ script_rotate (Radians 2) 1
