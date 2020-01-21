@@ -21,6 +21,7 @@ action_blink = do
     parent_dir <- query eDirection
     parent_vel <- query eVel
     parent_gfx <- query eGfx
+    parent_origin <- queryMaybe eOrigin
     command $ Spawn newEntity
       { ePos = Just parent_pos
       , eVel = Just $ parent_vel + rotateV2 parent_dir (V2 blink_speed 0)
@@ -28,6 +29,7 @@ action_blink = do
       , eGfx = Just $ do
           gfx <- parent_gfx
           pure $ withAlpha 0.4 $ gfx
+      , eOrigin = parent_origin
       , eScript = Just $ do
           sleep blink_time
           action_blink_finish
@@ -104,4 +106,30 @@ action_shootAt lifetime proto target = do
                 script_die
             ]
         }
+
+
+action_shoot
+    :: (CanRunCommands m, CanRunQueries m)
+    => Time
+    -> Entity
+    -> m ()
+action_shoot lifetime proto = do
+  let speed = fromMaybe 100 $ eSpeed proto
+  parent_pos  <- query ePos
+  parent_vel  <- queryDef 0 eVel
+  parent_dir  <- query eDirection
+  parent_team <- queryMaybe eTeam
+
+  command $ Spawn proto
+    { ePos = Just parent_pos
+    , eVel = Just $ parent_vel + rotateV2 parent_dir (V2 speed 0)
+    , eDirection = Just parent_dir
+    , eTeam = parent_team
+    , eScript = mconcat
+        [ eScript proto
+        , Just $ do
+            sleep lifetime
+            script_die
+        ]
+    }
 

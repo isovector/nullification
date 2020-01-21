@@ -39,6 +39,7 @@ turret player = newEntity
           sleep 0.5
           action_shootAt 2 gun player
       ]
+  , eHitpoints = Just 1
   , eHurtboxes = Just [Rectangle (-10) 20]
   , eTeam = Just EnemyTeam
   , eOnMinimap = Just (red, 1.5)

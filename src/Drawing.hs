@@ -1,6 +1,7 @@
 module Drawing (drawGame, draw_text) where
 
 import Geometry
+import Interactions
 import Game.Sequoia.Color
 import Game.Sequoia.Text
 
@@ -9,14 +10,14 @@ drawGame =
   [ draw_gfx
   , draw_lasers
 
-  , debug_drawHurtboxes
+  -- , debug_drawHurtboxes
 
   , draw_hp
   ]
 
 draw_gfx :: Query Form
 draw_gfx = do
-  pos <- query ePos
+  pos <- interact_onlyIfOnScreen
   origin <- queryDef 0 eOrigin
   Radians dir <- queryDef (Radians 0) eDirection
   fmap (move pos . rotate dir . move (- origin)) $ join $ query eGfx
@@ -32,7 +33,7 @@ draw_text
 
 draw_hp :: Query Form
 draw_hp = do
-  pos <- query ePos
+  pos <- interact_onlyIfOnScreen
   hp  <- query eHitpoints
   pure . move (pos + V2 0 38)
        . scale 0.7
@@ -42,7 +43,7 @@ draw_hp = do
 
 draw_lasers :: Query Form
 draw_lasers = do
-  src <- query ePos
+  src <- interact_onlyIfOnScreen
   query eLaser >>= \case
     (LaserAbsPos dst, _) -> do
       pure $ traced defaultLine {lineColor = blue, lineWidth = 3} $ path [src, dst]
@@ -54,7 +55,7 @@ draw_lasers = do
 
 debug_drawHurtboxes :: Query Form
 debug_drawHurtboxes = do
-  pos <- query ePos
+  pos <- interact_onlyIfOnScreen
   hurts <- fmap (moveBox pos) <$> query eHurtboxes
   pure $ group $ fmap debug_drawBox hurts
 

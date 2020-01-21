@@ -23,12 +23,13 @@ updateGame keystate dt input = do
   traverse_ (\(state, key, script) ->
                 when (keystate key == state) $
                   runPlayerScript script)
-    [ (Press, EKey, action_blink)
-    , (Unpress, EKey, action_blink_unpress)
+    [ (Press, LeftShiftKey, action_blink)
+    , (Unpress, LeftShiftKey, action_blink_unpress)
+    , (Press, SpaceKey, action_shoot 4 gun)
     , (Press, ZKey, action_stop)
     ]
 
-  when (keystate RKey == Press && keystate LeftShiftKey == Down) resetGame
+  when (keystate RKey == Press && keystate LeftControlKey == Down) resetGame
 
   emap (entsWith eAge)        $ interact_age dt
   emap (entsWith eHitpoints)  $ interact_manageHitpoints
