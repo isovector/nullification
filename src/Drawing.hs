@@ -1,4 +1,4 @@
-module Drawing (drawGame) where
+module Drawing (drawGame, draw_text) where
 
 import Geometry
 import Game.Sequoia.Color
@@ -22,17 +22,21 @@ draw_gfx = do
   fmap (move pos . rotate dir . move (- origin)) $ join $ query eGfx
 
 
+draw_text :: String -> Form
+draw_text
+  = toForm
+  . text
+  . color green
+  . monospace
+  . stringText
+
 draw_hp :: Query Form
 draw_hp = do
   pos <- query ePos
   hp  <- query eHitpoints
   pure . move (pos + V2 0 38)
        . scale 0.7
-       . toForm
-       . text
-       . color green
-       . monospace
-       . stringText
+       . draw_text
        $ show hp
 
 

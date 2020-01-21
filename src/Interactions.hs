@@ -4,10 +4,12 @@ import Geometry
 import Control.Monad.Coroutine (resume)
 import Control.Monad.Coroutine.SuspensionFunctors
 import Linear.V2 (angle)
+import Linear.Metric (qd)
 
 
 interact_manageHitpoints :: Interaction
 interact_manageHitpoints = do
+  void interact_onlyIfOnScreen
   hp <- query eHitpoints
   case hp <= 0 of
     True  -> pure delEntity
@@ -37,7 +39,7 @@ interact_age dt = do
 
 interact_velToPos :: Time -> Interaction
 interact_velToPos dt = do
-  pos <- query ePos
+  pos <- interact_onlyIfOnScreen
   vel <- query eVel
   pure unchanged
     { ePos = Set $ pos + dt *^ vel
@@ -46,6 +48,7 @@ interact_velToPos dt = do
 
 interact_accToVel :: Time -> Interaction
 interact_accToVel dt = do
+  void interact_onlyIfOnScreen
   vel <- query eVel
   acc <- query eAcc
   pure unchanged
@@ -94,7 +97,7 @@ data LaserInteraction = LaserInteraction
 
 interact_hitbox :: [(V2, Maybe Team, [(Box, Interaction)])] -> Interaction
 interact_hitbox hitboxes = do
-  pos   <- query ePos
+  pos   <- interact_onlyIfOnScreen
   hurts <- fmap (moveBox pos) <$> query eHurtboxes
   team  <- queryDef NeutralTeam eTeam
   let normalized_hitboxes = do
@@ -112,7 +115,7 @@ interact_hitbox hitboxes = do
 
 interact_laserDamage :: [LaserInteraction] -> Interaction
 interact_laserDamage lasers = do
-  pos   <- query ePos
+  pos   <- interact_onlyIfOnScreen
   hurts <- fmap (moveBox pos) <$> query eHurtboxes
   team  <- queryDef NeutralTeam eTeam
 
@@ -137,6 +140,18 @@ interact_damage :: Int -> Interaction
 interact_damage damage = do
   hp <- query eHitpoints
   pure unchanged
-    { eHitpoints = Set $ hp - damage
+    { eHitpoints = Set $ max 0 $ hp - damage
     }
+
+
+interact_onlyIfOnScreen :: Query V2
+interact_onlyIfOnScreen = do
+  pos <- query ePos
+  Just camera_pos <-
+    fmap listToMaybe
+      . subquery (uniqueEnt eIsCamera)
+      $ query ePos
+  guard $ qd pos camera_pos <= 800 * 800
+  pure pos
+
 

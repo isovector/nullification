@@ -39,7 +39,7 @@ updateGame keystate dt input = do
   emap (uniqueEnt eIsCamera)  $ interact_focusCamera
 
   lasers <- efor allEnts $ do
-    pos <- query ePos
+    pos <- interact_onlyIfOnScreen
     team <- queryMaybe eTeam
     dir <- queryDef 0 eDirection
     (laser, action) <- query eLaser
@@ -47,7 +47,7 @@ updateGame keystate dt input = do
   emap (entsWith eHurtboxes) $ interact_laserDamage lasers
 
 
-  hitboxes <- efor allEnts $ (,,) <$> query ePos <*> queryMaybe eTeam <*> query eHitboxes
+  hitboxes <- efor allEnts $ (,,) <$> interact_onlyIfOnScreen <*> queryMaybe eTeam <*> query eHitboxes
   emap (entsWith eHurtboxes) $ interact_hitbox hitboxes
 
 
@@ -200,6 +200,7 @@ run = do
 
 
   poll $ do
+    fps   <- fmap (1 /) $ sample clock
     state <- sample game
     liftIO $ do
       ((_, cameras), _) <-
@@ -219,7 +220,9 @@ run = do
         pure (gfxs, minimap)
       pure $ collage gameWidth gameHeight
            . (toForm (image "assets/space.png") :)
-           . (++ [move (V2 32 (600 - 64)) minimap])
+           . (++ [ move (V2 32 (600 - 64)) minimap
+                 , move 20 $ draw_text $ show @Int $ round fps
+                 ])
            -- . fmap (scale 0.2)
            $ moveGroup (-camera) forms
 
