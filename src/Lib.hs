@@ -31,6 +31,7 @@ updateGame keystate dt input = do
   when (keystate RKey == Press && keystate LeftShiftKey == Down) resetGame
 
   emap (entsWith eAge)        $ interact_age dt
+  emap (entsWith eHitpoints)  $ interact_manageHitpoints
   emap (entsWith eScript)     $ interact_runScript dt
   emap (entsWith eVel)        $ interact_velToPos dt
   emap (entsWith eAcc)        $ interact_accToVel dt
@@ -98,6 +99,7 @@ initialize = void $ do
     , eTeam       = Just PlayerTeam
     , eFocused    = Just ()
     , eOnMinimap = Just (green, 3)
+    , eHitpoints = Just 10
     }
 
   let mkWall x y =
@@ -138,7 +140,7 @@ initialize = void $ do
         { ePos = Just src
         , eLaser = Just
             ( LaserAbsPos dst
-            , pure delEntity
+            , interact_damage 3
             )
         -- , eTeam = Just EnemyTeam
         }

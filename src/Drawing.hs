@@ -2,6 +2,7 @@ module Drawing (drawGame) where
 
 import Geometry
 import Game.Sequoia.Color
+import Game.Sequoia.Text
 
 drawGame :: [Query Form]
 drawGame =
@@ -9,6 +10,8 @@ drawGame =
   , draw_lasers
 
   , debug_drawHurtboxes
+
+  , draw_hp
   ]
 
 draw_gfx :: Query Form
@@ -17,6 +20,20 @@ draw_gfx = do
   origin <- queryDef 0 eOrigin
   Radians dir <- queryDef (Radians 0) eDirection
   fmap (move pos . rotate dir . move (- origin)) $ join $ query eGfx
+
+
+draw_hp :: Query Form
+draw_hp = do
+  pos <- query ePos
+  hp  <- query eHitpoints
+  pure . move (pos + V2 0 38)
+       . scale 0.7
+       . toForm
+       . text
+       . color green
+       . monospace
+       . stringText
+       $ show hp
 
 
 draw_lasers :: Query Form

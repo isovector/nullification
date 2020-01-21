@@ -23,6 +23,8 @@ data EntWorld f = World
   -- TODO(sandy): facing
   , eDirection     :: Field f Angle
 
+  , eHitpoints     :: Field f Int
+
   , eOrigin        :: Field f V2
   , eGfx           :: Field f (Query Form)
 

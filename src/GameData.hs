@@ -3,6 +3,7 @@ module GameData where
 import Game.Sequoia.Color
 import Actions
 import Tasks
+import Interactions
 
 gun :: Entity
 gun = newEntity
@@ -15,11 +16,10 @@ gun = newEntity
       ]
   , eHitboxes = Just
       [ ( Rectangle (V2 (-2) (-2)) $ V2 4 4
-        , pure delEntity
+        , interact_damage 1
         )
       ]
   }
-
 
 wall :: Entity
 wall = newEntity

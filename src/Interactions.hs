@@ -6,6 +6,15 @@ import Control.Monad.Coroutine.SuspensionFunctors
 import Linear.V2 (angle)
 
 
+interact_manageHitpoints :: Interaction
+interact_manageHitpoints = do
+  hp <- query eHitpoints
+  case hp <= 0 of
+    True  -> pure delEntity
+    False -> pure unchanged
+
+
+
 interact_focusCamera :: Interaction
 interact_focusCamera = do
   with eIsCamera
@@ -123,4 +132,11 @@ laserIntersection li box =
     src = liSrcPos li
     dir = liDirection li
 
+
+interact_damage :: Int -> Interaction
+interact_damage damage = do
+  hp <- query eHitpoints
+  pure unchanged
+    { eHitpoints = Set $ hp - damage
+    }
 
