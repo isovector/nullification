@@ -6,6 +6,13 @@ import Control.Monad.Coroutine (resume)
 import Control.Monad.Coroutine.SuspensionFunctors
 
 
+startGlobalScript :: CanRunCommands m => Task () -> m ()
+startGlobalScript script =
+  command $ Spawn newEntity
+    { eScript = Just script
+    }
+
+
 sleep :: Time -> Task ()
 sleep time | time <= 0 = pure ()
 sleep time = do

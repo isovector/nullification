@@ -50,7 +50,7 @@ draw_transmission_gfx (Person name portrait) msg =
 
 draw_gfx :: Query Form
 draw_gfx = do
-  pos <- interact_onlyIfOnScreen
+  pos <- interact_posIfOnScreen
   origin <- queryDef 0 eOrigin
   Radians dir <- queryDef (Radians 0) eDirection
   fmap (move pos . rotate dir . move (- origin)) $ join $ query eGfx
@@ -68,7 +68,7 @@ draw_text c a
 
 draw_hp :: Query Form
 draw_hp = do
-  pos <- interact_onlyIfOnScreen
+  pos <- interact_posIfOnScreen
   hp  <- query eHitpoints
   pure . move (pos + V2 0 38)
        . scale 0.7
@@ -79,7 +79,7 @@ draw_hp = do
 
 draw_lasers :: Query Form
 draw_lasers = do
-  src <- interact_onlyIfOnScreen
+  src <- interact_posIfOnScreen
   query eLaser >>= \case
     (LaserAbsPos dst, _) -> do
       pure $ traced defaultLine {lineColor = blue, lineWidth = 3} $ path [src, dst]
@@ -91,7 +91,7 @@ draw_lasers = do
 
 debug_drawHurtboxes :: Query Form
 debug_drawHurtboxes = do
-  pos <- interact_onlyIfOnScreen
+  pos <- interact_posIfOnScreen
   hurts <- fmap (moveBox pos) <$> query eHurtboxes
   pure $ group $ fmap debug_drawBox hurts
 

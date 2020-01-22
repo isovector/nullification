@@ -29,10 +29,9 @@ import           Game.Sequoia hiding (form, change, play)
 import           Game.Sequoia.Window (MouseButton (..))
 import           Linear (norm, normalize, (*^), (^*), quadrance, M22, project)
 import           Types
-import qualified Control.Monad.Fail as MF
 
 
-class CanRunCommands m where
+class Monad m => CanRunCommands m where
   commands :: [Command] -> m ()
 
 instance CanRunCommands Query where
@@ -94,9 +93,6 @@ instance CanRunQueries Task where
   queryEnt    = lift E.queryEnt
   queryTarget = lift . E.queryTarget
   focus e m   = lift . E.QueryT $ local (first $ const e) $ runQueryT' m
-
-instance MonadFail Task where
-  fail = lift . fail
 
 
 allEnts :: MonadIO m => EntTarget EntWorld m

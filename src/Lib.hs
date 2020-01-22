@@ -18,6 +18,7 @@ import           Interactions
 import           Prelude hiding (init)
 import           SDL (SDLException ())
 import qualified SDL.Mixer as SDL
+import           Tasks
 
 
 runPlayerScript :: Ent -> Query () -> Game ()
@@ -75,7 +76,7 @@ updateGame keystate dt input = do
   emap (uniqueEnt eIsCamera)  $ interact_focusCamera
 
   lasers <- efor (entsWith eLaser) $ do
-    pos  <- interact_onlyIfOnScreen
+    pos  <- interact_posIfOnScreen
     team <- queryMaybe eTeam
     dir  <- queryDef 0 eDirection
     (laser, action) <- query eLaser
@@ -85,7 +86,7 @@ updateGame keystate dt input = do
 
   hitboxes <- efor (entsWith eHitboxes) $
     (,,,,)
-      <$> interact_onlyIfOnScreen
+      <$> interact_posIfOnScreen
       <*> queryMaybe eTeam
       <*> queryEnt
       <*> queryFlag eDieOnContact
@@ -102,8 +103,10 @@ resetGame = do
 
 initialize :: Game ()
 initialize = void $ do
-  -- doTransmission esra "Hello world!\nThis is a test of a long string."
-  doTransmission (Person "Karfew" "man2") "Roger that. Over and out."
+  startGlobalScript $ doConversation
+    [ (esra, "Welcome to the game!")
+    , (Person "Karfew" "man2", "Roger that. Over and out.")
+    ]
 
   let cameraProto = newEntity
         { ePos      = Just $ V2 512 $ -2000
@@ -193,10 +196,6 @@ initialize = void $ do
 
 
 
-runCommand :: Command -> Game ()
-runCommand (Spawn proto) = void $ createEntity proto
-runCommand (Edit ent proto) = setEntity ent proto
-runCommand (Sfx sfx) = liftIO $ void $ try @SDLException $ SDL.play $ sfx soundBank
 
 
 run :: N (B Element)
@@ -206,38 +205,15 @@ run = do
   keyboard     <- getKeyboard
   old_keyboard <- sample $ delayTime clock [] keyboard
 
-  (init, init_cmds) <-
-    liftIO
-      . fmap (first fst)
-      . runWriterT
-      . yieldSystemT (SystemState 0 defStorage defHooks)
-      $ initialize
-  !_ <- unless (null init_cmds) $ error "initialize ran a command!"
-
-
+  init <- execGame (SystemState 0 defStorage defHooks) initialize
   (game, _) <- foldmp init $ \state -> do
     arrs   <- sample $ arrows keyboard
     dt     <- sample clock
     kb     <- sample keyboard
     old_kb <- sample old_keyboard
-    let keystate   k = getKeystate (elem k old_kb) $ elem k kb
+    let keystate k = getKeystate (elem k old_kb) $ elem k kb
 
-    (state', cmds) <-
-      liftIO
-        . fmap (first fst)
-        . runWriterT
-        . yieldSystemT state
-        $ updateGame keystate dt arrs
-    (state'', cmds') <-
-      liftIO
-        . fmap (first fst)
-        . runWriterT
-        . yieldSystemT state'
-        $ traverse_ runCommand cmds
-    -- DEBUG
-    !_ <- unless (null cmds') $ error "runCommand ran a command!"
-
-    pure state''
+    execGame state $ updateGame keystate dt arrs
 
 
   poll $ do
@@ -260,10 +236,11 @@ run = do
            . (++ [ move (V2 32 (600 - 64)) minimap
                  , move 20 $ draw_text green LeftAligned $ show @Int $ round fps
                  ])
-           -- . fmap (scale 0.2)
            $ moveGroup (-camera) forms
 
 
+------------------------------------------------------------------------------
+-- | Run enough of the Game monad to do something pure -- usually for drawing
 evalGame
     :: SystemState EntWorld UnderlyingMonad
     -> Game a
@@ -275,23 +252,51 @@ evalGame state m = do
   pure a
 
 
+------------------------------------------------------------------------------
+-- | Do a game loop; run any resulting commands
+execGame
+  :: MonadIO m
+  => SystemState EntWorld UnderlyingMonad
+  -> SystemT EntWorld UnderlyingMonad a
+  -> m (SystemState EntWorld UnderlyingMonad)
+execGame state m = do
+  let runIt s = liftIO . fmap (first fst) . runWriterT . yieldSystemT s
+  (state', cmds)   <- runIt state m
+  (state'', cmds') <- runIt state' $ traverse_ runCommand cmds
+  !_ <- unless (null cmds') $ error "runCommand ran a command!"
+  pure state''
+
+runCommand :: Command -> Game ()
+runCommand (Spawn proto) = void $ createEntity proto
+runCommand (Edit ent proto) = setEntity ent proto
+runCommand (Sfx sfx) = liftIO $ void $ try @SDLException $ SDL.play $ sfx soundBank
+
+
 esra :: Person
 esra = Person "Esra" "woman6"
 
 
-doTransmission :: Person -> String -> Game Time
+doTransmission :: CanRunCommands m => Person -> String -> m Time
 doTransmission person msg = do
   let wordcount = fromIntegral $ length $ words msg
       charcount = fromIntegral $ length msg
       wanted_time = wordcount / readingSpeedWordsPerSecond
                   + charcount / characterDisplayPerSecond
       time = max minTransmissionTime wanted_time
-  void $ createEntity newEntity
+  command $ Spawn newEntity
     { eSpecialThing = Just $ Transmission person msg
     , eLifetime     = Just time
     , eAge          = Just 0
     }
   pure time
+
+
+doConversation :: [(Person, String)] -> Task ()
+doConversation [] = pure ()
+doConversation ((person, msg) : convo) = do
+  time <- doTransmission person msg
+  sleep $ time + betweenTransmissionsTime
+  doConversation convo
 
 
 getKeystate :: Bool -> Bool -> Keystate

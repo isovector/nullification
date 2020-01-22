@@ -20,7 +20,7 @@ interact_lifetime dt = do
 
 interact_sfxs :: Interaction
 interact_sfxs = do
-  void interact_onlyIfOnScreen
+  interact_globalOrIfOnScreen
   sfx <- query ePlaySfx
   command $ Sfx sfx
   pure unchanged
@@ -31,7 +31,7 @@ interact_sfxs = do
 
 interact_manageHitpoints :: Interaction
 interact_manageHitpoints = do
-  void interact_onlyIfOnScreen
+  interact_globalOrIfOnScreen
   hp <- query eHitpoints
   case hp <= 0 of
     True  -> pure delEntity
@@ -73,7 +73,7 @@ interact_age dt = do
 
 interact_velToPos :: Time -> Interaction
 interact_velToPos dt = do
-  pos <- interact_onlyIfOnScreen
+  pos <- interact_posIfOnScreen
   vel <- query eVel
   pure unchanged
     { ePos = Set $ pos + dt *^ vel
@@ -82,7 +82,7 @@ interact_velToPos dt = do
 
 interact_accToVel :: Time -> Interaction
 interact_accToVel dt = do
-  void interact_onlyIfOnScreen
+  void interact_posIfOnScreen
   vel <- query eVel
   acc <- query eAcc
   pure unchanged
@@ -131,7 +131,7 @@ data LaserInteraction = LaserInteraction
 
 interact_hitbox :: [(V2, Maybe Team, Ent, Bool, [(Box, Interaction)])] -> Interaction
 interact_hitbox hitboxes = do
-  pos   <- interact_onlyIfOnScreen
+  pos   <- interact_posIfOnScreen
   hurts <- fmap (moveBox pos) <$> query eHurtboxes
   team  <- queryDef NeutralTeam eTeam
   let normalized_hitboxes = do
@@ -153,7 +153,7 @@ interact_hitbox hitboxes = do
 -- | this should do DPS, not damage per FRAME
 interact_laserDamage :: Time -> [LaserInteraction] -> Interaction
 interact_laserDamage dt lasers = do
-  pos   <- interact_onlyIfOnScreen
+  pos   <- interact_posIfOnScreen
   hurts <- fmap (moveBox pos) <$> query eHurtboxes
   team  <- queryDef NeutralTeam eTeam
 
@@ -182,8 +182,8 @@ interact_damage damage = do
     }
 
 
-interact_onlyIfOnScreen :: Query V2
-interact_onlyIfOnScreen = do
+interact_posIfOnScreen :: Query V2
+interact_posIfOnScreen = do
   pos <- query ePos
   Just camera_pos <-
     fmap listToMaybe
@@ -192,4 +192,15 @@ interact_onlyIfOnScreen = do
   guard $ qd pos camera_pos <= 800 * 800
   pure pos
 
+
+interact_globalOrIfOnScreen :: Query ()
+interact_globalOrIfOnScreen = do
+  queryMaybe ePos >>= \case
+    Nothing -> pure ()
+    Just pos -> do
+      Just camera_pos <-
+        fmap listToMaybe
+          . subquery (uniqueEnt eIsCamera)
+          $ query ePos
+      guard $ qd pos camera_pos <= 800 * 800
 

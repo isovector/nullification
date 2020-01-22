@@ -12,6 +12,8 @@ module Types
 import           BasePrelude
 import           Control.Monad.Coroutine
 import           Control.Monad.Coroutine.SuspensionFunctors
+import qualified Control.Monad.Fail as MF
+import           Control.Monad.Trans.Class (lift)
 import           Control.Monad.Trans.Writer.CPS
 import           Data.Ecstasy
 import qualified Data.Map as M
@@ -88,6 +90,9 @@ type Interaction = Query (EntWorld 'SetterOf)
 type Game = SystemT EntWorld UnderlyingMonad
 
 type Task = Coroutine (Request (EntWorld 'SetterOf) Time) Query
+
+instance MonadFail Task where
+  fail = lift . fail
 
 data Team
   = NeutralTeam
