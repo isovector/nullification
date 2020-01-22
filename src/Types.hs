@@ -36,7 +36,7 @@ data EntWorld f = World
   , eHitboxes      :: Field f [(Box, Interaction)]
   , eHurtboxes     :: Field f [Box]
   , eTeam          :: Field f Team
-  , eMissile       :: Flag f
+  , eDieOnContact  :: Flag f
 
   , eAlive         :: Flag f
   , eAge           :: Field f Time
@@ -121,6 +121,9 @@ data Keystate = Press | Down | Up | Unpress
 
 
 data SoundBank = SoundBank
-  { sfxShot :: Chunk
+  { sfxShot       :: Chunk
+  , sfxBlinkStart :: Chunk
+  , sfxBlinkEnd   :: Chunk
+  , sfxPowerup    :: Chunk
   }
 

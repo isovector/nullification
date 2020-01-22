@@ -29,7 +29,6 @@ import           Game.Sequoia hiding (form, change, play)
 import           Game.Sequoia.Window (MouseButton (..))
 import           Linear (norm, normalize, (*^), (^*), quadrance, M22, project)
 import           Types
-import SDL.Mixer (play, playMusic, haltMusic)
 
 
 class CanRunCommands m where

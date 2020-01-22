@@ -19,6 +19,7 @@ action_blink blink_time blink_speed = do
     parent_vel <- query eVel
     parent_gfx <- query eGfx
     parent_origin <- queryMaybe eOrigin
+    command $ Sfx sfxBlinkStart
     command $ Spawn newEntity
       { ePos = Just parent_pos
       , eVel = Just $ parent_vel + rotateV2 parent_dir (V2 blink_speed 0)
@@ -57,7 +58,8 @@ action_blink_finish = do
   BlinkFor parent <- query eSpecialThing
   pos' <- query ePos
   commands
-    [ Edit parent unchanged
+    [ Sfx sfxBlinkEnd
+    , Edit parent unchanged
         { ePos = Set pos'
         }
     , Edit ent delEntity
@@ -112,14 +114,13 @@ action_shoot
     -> Entity
     -> m ()
 action_shoot lifetime proto = do
-  command $ Sfx sfxShot
-
   let speed = fromMaybe 100 $ eSpeed proto
   parent_pos  <- query ePos
   parent_vel  <- queryDef 0 eVel
   parent_dir  <- query eDirection
   parent_team <- queryMaybe eTeam
 
+  command $ Sfx sfxShot
   command $ Spawn proto
     { ePos = Just parent_pos
     , eVel = Just $ parent_vel + rotateV2 parent_dir (V2 speed 0)

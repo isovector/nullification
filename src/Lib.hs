@@ -64,7 +64,7 @@ updateGame keystate dt input = do
       <$> interact_onlyIfOnScreen
       <*> queryMaybe eTeam
       <*> queryEnt
-      <*> queryFlag eMissile
+      <*> queryFlag eDieOnContact
       <*> query eHitboxes
   emap (entsWith eHurtboxes) $ interact_hitbox hitboxes
 
@@ -99,16 +99,25 @@ resetGame = do
 initialize :: Game ()
 initialize = void $ do
   let cameraProto = newEntity
-        { ePos      = Just $ V2 0 0
+        { ePos      = Just $ V2 512 $ -1000
         , eIsCamera = Just ()
         }
   void $ createEntity cameraProto
 
+  void $ createEntity
+    ( collectable $ do
+        Radians angle <- query eDirection
+        pure unchanged
+          { eDirection = Set $ Radians $ angle + pi
+          }
+    ) { ePos = Just $ V2 512 (-900)
+      }
+
   player <- createEntity newEntity
-    { ePos = Just $ V2 512 (-500)
+    { ePos = Just $ V2 512 (-1000)
     , eOrigin = Just $ V2 27 16
     , eDirection = Just $ Radians $ pi / 2
-    , eVel = Just $ V2 0 100
+    , eVel = Just $ V2 0 0
     , eGfx = Just $ do
         pure $ toForm $ image "assets/ship.png"
     , eHurtboxes  = Just [Rectangle (V2 (-16) (-16)) $ V2 32 32]

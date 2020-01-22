@@ -19,7 +19,7 @@ gun = newEntity
         , interact_damage 1
         )
       ]
-  , eMissile = Just ()
+  , eDieOnContact = Just ()
   }
 
 wall :: Entity
@@ -45,3 +45,18 @@ turret player = newEntity
   , eTeam = Just EnemyTeam
   , eOnMinimap = Just (red, 1.5)
   }
+
+
+collectable :: Interaction -> Entity
+collectable interaction = newEntity
+  { eGfx = Just $ pure $ filled green $ rect 10 10
+  , eHitboxes = Just
+      [ ( Rectangle (-5) 10
+        , do
+            command $ Sfx sfxPowerup
+            interaction
+        )
+      ]
+  , eDieOnContact = Just ()
+  }
+
