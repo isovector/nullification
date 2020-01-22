@@ -1,21 +1,32 @@
 module Lib (main) where
 
-import Control.FRPNow hiding (when, first)
-import Data.Ecstasy.Types
-import Game.Sequoia.Color
-import Game.Sequoia.Keyboard
-import Game.Sequoia.Time
-import Interactions
-import Prelude hiding (init)
-import Drawing
-import Control.Monad.Trans.Writer.CPS
-import Actions
-import GameData
+import           Actions
+import           Assets
+import           Control.FRPNow hiding (when, first)
 import qualified Control.Monad.Trans.Reader as R
+import           Control.Monad.Trans.Writer.CPS
+import           Data.Ecstasy.Types
+import           Drawing
+import qualified Game.Sequoia as S
+import           Game.Sequoia.Color
+import           Game.Sequoia.Keyboard
+import           Game.Sequoia.Time
+import           GameData
+import           Interactions
+import           Prelude hiding (init)
+import qualified SDL.Mixer as SDL
+import SDL (SDLException ())
 
 
 runPlayerScript :: Query () -> Game ()
 runPlayerScript = void . efor (entsWith eControlled)
+
+
+upgradedBlink :: Int -> Query ()
+upgradedBlink 0 = pure ()
+upgradedBlink 1 = action_blink 0.01 5000
+upgradedBlink 2 = action_blink 0.5 400
+upgradedBlink 3 = action_blink 0.5 800
 
 
 updateGame :: (Key -> Keystate) -> Time -> V2 -> Game ()
@@ -23,7 +34,7 @@ updateGame keystate dt input = do
   traverse_ (\(state, key, script) ->
                 when (keystate key == state) $
                   runPlayerScript script)
-    [ (Press, LeftShiftKey, action_blink)
+    [ (Press, LeftShiftKey, upgradedBlink 3)
     , (Unpress, LeftShiftKey, action_blink_unpress)
     , (Press, SpaceKey, action_shoot 4 gun)
     , (Press, ZKey, action_stop)
@@ -48,7 +59,13 @@ updateGame keystate dt input = do
   emap (entsWith eHurtboxes) $ interact_laserDamage lasers
 
 
-  hitboxes <- efor allEnts $ (,,) <$> interact_onlyIfOnScreen <*> queryMaybe eTeam <*> query eHitboxes
+  hitboxes <- efor allEnts $
+    (,,,,)
+      <$> interact_onlyIfOnScreen
+      <*> queryMaybe eTeam
+      <*> queryEnt
+      <*> queryFlag eMissile
+      <*> query eHitboxes
   emap (entsWith eHurtboxes) $ interact_hitbox hitboxes
 
 
@@ -157,6 +174,7 @@ initialize = void $ do
 runCommand :: Command -> Game ()
 runCommand (Spawn proto) = void $ createEntity proto
 runCommand (Edit ent proto) = setEntity ent proto
+runCommand (Sfx sfx) = liftIO $ void $ try @SDLException $ SDL.play $ sfx soundBank
 
 
 run :: N (B Element)
@@ -236,9 +254,15 @@ getKeystate True False = Unpress
 
 
 main :: IO ()
-main = play config (const run) pure
-  where
-    config = EngineConfig (gameWidth, gameHeight) "Nullification" black
+main
+  = SDL.withAudio
+        (SDL.Audio 44100 SDL.FormatS16_Sys SDL.Stereo)
+        4096 $ do
+      SDL.setChannels 200
+      S.play
+          (EngineConfig (gameWidth, gameHeight) "Nullification" black)
+          (const run)
+          pure
 
 
 gameWidth :: Num a => a

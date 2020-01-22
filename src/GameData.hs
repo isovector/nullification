@@ -19,6 +19,7 @@ gun = newEntity
         , interact_damage 1
         )
       ]
+  , eMissile = Just ()
   }
 
 wall :: Entity

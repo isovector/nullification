@@ -5,6 +5,7 @@ import Control.Monad.Coroutine (resume)
 import Control.Monad.Coroutine.SuspensionFunctors
 import Linear.V2 (angle)
 import Linear.Metric (qd)
+import Scripts
 
 
 interact_manageHitpoints :: Interaction
@@ -16,17 +17,29 @@ interact_manageHitpoints = do
     False -> pure unchanged
 
 
-
 interact_focusCamera :: Interaction
 interact_focusCamera = do
   with eIsCamera
-  Just (focused, _) <- queryUnique eFocused
-  -- pos <- query ePos
-  focus_pos <- focus focused $ query ePos
-
-  pure unchanged
-    { ePos = Set focus_pos
-    }
+  is_focused <- queryUnique eFocused
+  case is_focused of
+    Nothing -> do
+      pure unchanged
+        { eVel = Unset
+        }
+    Just (focused, _) -> do
+      pos <- query ePos
+      focus_pos <- focus focused $ query ePos
+      pure $ case qd pos focus_pos <= 400 of
+        True ->
+          unchanged
+            { ePos = Set focus_pos
+            , eScript = Unset
+            , eVel = Unset
+            }
+        False ->
+          unchanged
+            { eScript = Set $ script_goTo focus_pos 800 1
+            }
 
 
 interact_age :: Time -> Interaction
@@ -95,20 +108,22 @@ data LaserInteraction = LaserInteraction
   }
 
 
-interact_hitbox :: [(V2, Maybe Team, [(Box, Interaction)])] -> Interaction
+interact_hitbox :: [(V2, Maybe Team, Ent, Bool, [(Box, Interaction)])] -> Interaction
 interact_hitbox hitboxes = do
   pos   <- interact_onlyIfOnScreen
   hurts <- fmap (moveBox pos) <$> query eHurtboxes
   team  <- queryDef NeutralTeam eTeam
   let normalized_hitboxes = do
-        (v2, t, hs) <- hitboxes
+        (v2, t, e, m, hs) <- hitboxes
         guard $ t /= Just team
-        fmap (uncurry (,) . first (moveBox v2)) hs
+        fmap (uncurry ((,,,) e m) . first (moveBox v2)) hs
 
-  case find (\(b1, (b2, _)) -> boxIntersectsBox b1 b2)
+  case find (\(b1, (_, _, b2, _)) -> boxIntersectsBox b1 b2)
          . liftA2 (,) hurts
          $ normalized_hitboxes of
-    Just (_, (_, interaction)) -> interaction
+    Just (_, (e, m, _, interaction)) -> do
+      when m $ command $ Edit e delEntity
+      interaction
     Nothing -> pure unchanged
 
 

@@ -6,11 +6,8 @@ import Geometry
 
 
 -- Runs for the using entity
-action_blink :: (CanRunCommands m, CanRunQueries m) => m ()
-action_blink = do
-  let blink_speed = 100
-      blink_time  = 0.5
-
+action_blink :: (CanRunCommands m, CanRunQueries m) => Time -> Double ->  m ()
+action_blink blink_time blink_speed = do
   parent <- queryEnt
   other_blinks <- subquery (entsWith eSpecialThing) $ do
     BlinkFor ent <- query eSpecialThing
@@ -95,6 +92,7 @@ action_shootAt lifetime proto target = do
     True -> do
       parent_team <- queryMaybe eTeam
 
+      command $ Sfx sfxShot
       command $ Spawn proto
         { ePos = Just parent_pos
         , eTeam = parent_team
@@ -114,6 +112,8 @@ action_shoot
     -> Entity
     -> m ()
 action_shoot lifetime proto = do
+  command $ Sfx sfxShot
+
   let speed = fromMaybe 100 $ eSpeed proto
   parent_pos  <- query ePos
   parent_vel  <- queryDef 0 eVel

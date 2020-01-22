@@ -3,7 +3,11 @@
 {-# LANGUAGE StandaloneDeriving         #-}
 {-# OPTIONS_GHC -fno-warn-orphans       #-}
 
-module Types where
+module Types
+  ( module Types
+  , Music
+  , Chunk
+  ) where
 
 import BasePrelude
 import Game.Sequoia
@@ -11,6 +15,7 @@ import Data.Ecstasy
 import Control.Monad.Trans.Writer.CPS
 import Control.Monad.Coroutine
 import Control.Monad.Coroutine.SuspensionFunctors
+import SDL.Mixer (Music, Chunk)
 
 type Flag  f   = Component f 'Field ()
 type Field f a = Component f 'Field a
@@ -31,6 +36,7 @@ data EntWorld f = World
   , eHitboxes      :: Field f [(Box, Interaction)]
   , eHurtboxes     :: Field f [Box]
   , eTeam          :: Field f Team
+  , eMissile       :: Flag f
 
   , eAlive         :: Flag f
   , eAge           :: Field f Time
@@ -100,6 +106,7 @@ newtype Angle = Radians Double
 data Command
   = Spawn Entity
   | Edit Ent (EntWorld 'SetterOf)
+  | Sfx (SoundBank -> Chunk)
 
 newtype Progress = Progress Double
   deriving (Eq, Ord, Show)
@@ -111,4 +118,9 @@ data SpecialThing
 
 data Keystate = Press | Down | Up | Unpress
   deriving (Eq, Ord, Show)
+
+
+data SoundBank = SoundBank
+  { sfxShot :: Chunk
+  }
 

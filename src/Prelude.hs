@@ -25,10 +25,11 @@ import           Data.Ecstasy hiding (query, queryEnt, queryMaybe, queryDef, all
 import           Data.Ecstasy.Internal.Deriving
 import           Data.Ecstasy.Types
 import qualified Data.Ecstasy.Types as E
-import           Game.Sequoia hiding (form, change)
+import           Game.Sequoia hiding (form, change, play)
 import           Game.Sequoia.Window (MouseButton (..))
 import           Linear (norm, normalize, (*^), (^*), quadrance, M22, project)
 import           Types
+import SDL.Mixer (play, playMusic, haltMusic)
 
 
 class CanRunCommands m where
