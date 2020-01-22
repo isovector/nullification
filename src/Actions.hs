@@ -77,17 +77,17 @@ action_stop = do
     }
 
 
-
 action_shootAt
     :: (CanRunCommands m, CanRunQueries m)
-    => Time
-    -> Entity
+    => Entity
     -> Ent
     -> m ()
-action_shootAt lifetime proto target = do
+action_shootAt proto target = do
   let speed = fromMaybe 100 $ eSpeed proto
+      lifetime = fromMaybe 100 $ eLifetime proto
   target_pos <- focus target $ query ePos
   parent_pos <- query ePos
+
 
   -- Only shoot if you're in range
   case (quadrance (target_pos - parent_pos) <= (speed * lifetime) * (speed * lifetime)) of
@@ -97,41 +97,56 @@ action_shootAt lifetime proto target = do
 
       command $ Sfx sfxShot
       command $ Spawn proto
-        { ePos = Just parent_pos
-        , eTeam = parent_team
-        , eScript = mconcat
+        { ePos      = Just parent_pos
+        , eTeam     = parent_team
+        , eScript   = mconcat
             [ eScript proto
             , Just $ script_goTowards target_pos speed
-            , Just $ do
-                sleep lifetime
-                script_die
             ]
         }
 
 
-action_shoot
+action_shootDir
     :: (CanRunCommands m, CanRunQueries m)
-    => Time
+    => Angle
     -> Entity
     -> m ()
-action_shoot lifetime proto = do
+action_shootDir dir proto = do
   let speed = fromMaybe 100 $ eSpeed proto
   parent_pos  <- query ePos
   parent_vel  <- queryDef 0 eVel
-  parent_dir  <- query eDirection
   parent_team <- queryMaybe eTeam
 
-  command $ Sfx sfxShot
   command $ Spawn proto
-    { ePos = Just parent_pos
-    , eVel = Just $ parent_vel + rotateV2 parent_dir (V2 speed 0)
-    , eDirection = Just parent_dir
-    , eTeam = parent_team
-    , eScript = mconcat
-        [ eScript proto
-        , Just $ do
-            sleep lifetime
-            script_die
-        ]
+    { ePos       = Just parent_pos
+    , eVel       = Just $ parent_vel + rotateV2 dir (V2 speed 0)
+    , eDirection = Just dir
+    , eTeam      = parent_team
     }
+
+action_shoot
+    :: (CanRunCommands m, CanRunQueries m)
+    => Entity
+    -> m ()
+action_shoot proto = do
+  dir  <- query eDirection
+  action_shootDir dir proto
+  command $ Sfx sfxShot
+
+
+action_multishot
+    :: (CanRunCommands m, CanRunQueries m)
+    => Angle
+    -> Int
+    -> Entity
+    -> m ()
+action_multishot _ 1 proto = action_shoot proto
+action_multishot (Radians spread) num proto = do
+  Radians parent_dir <- query eDirection
+  let start_dir = parent_dir - spread / 2
+
+  for_ [0 .. num - 1] $ \n -> do
+    action_shootDir
+      (Radians $ start_dir + (fromIntegral n + 0.5) * spread / fromIntegral num)
+      proto
 

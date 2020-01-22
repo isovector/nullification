@@ -63,6 +63,7 @@ updateGame keystate dt input = do
     runController keystate mapping ent controller
 
   emap (entsWith eAge)        $ interact_age dt
+  emap (entsWith eLifetime)   $ interact_lifetime dt
   emap (entsWith eHitpoints)  $ interact_manageHitpoints
   emap (entsWith eScript)     $ interact_runScript dt
   emap (entsWith eVel)        $ interact_velToPos dt
@@ -70,16 +71,16 @@ updateGame keystate dt input = do
   emap (entsWith eControlled) $ interact_controlledByPlayer dt input
   emap (uniqueEnt eIsCamera)  $ interact_focusCamera
 
-  lasers <- efor allEnts $ do
-    pos <- interact_onlyIfOnScreen
+  lasers <- efor (entsWith eLaser) $ do
+    pos  <- interact_onlyIfOnScreen
     team <- queryMaybe eTeam
-    dir <- queryDef 0 eDirection
+    dir  <- queryDef 0 eDirection
     (laser, action) <- query eLaser
     pure $ LaserInteraction pos dir team laser action
   emap (entsWith eHurtboxes) $ interact_laserDamage dt lasers
 
 
-  hitboxes <- efor allEnts $
+  hitboxes <- efor (entsWith eHitboxes) $
     (,,,,)
       <$> interact_onlyIfOnScreen
       <*> queryMaybe eTeam
@@ -119,7 +120,7 @@ resetGame = do
 initialize :: Game ()
 initialize = void $ do
   let cameraProto = newEntity
-        { ePos      = Just $ V2 512 $ -200
+        { ePos      = Just $ V2 512 $ -2000
         , eIsCamera = Just ()
         }
   void $ createEntity cameraProto
@@ -134,7 +135,7 @@ initialize = void $ do
       }
 
   player <- createEntity newEntity
-    { ePos = Just $ V2 512 (-200)
+    { ePos = Just $ V2 512 (-2000)
     , eOrigin = Just $ V2 27 16
     , eDirection = Just $ Radians $ pi / 2
     , eVel = Just $ V2 0 100
@@ -142,7 +143,7 @@ initialize = void $ do
         pure $ toForm $ image "assets/ship.png"
     , eHurtboxes  = Just [Rectangle (V2 (-16) (-16)) $ V2 32 32]
     , eControlled = Just $ M.fromList
-        [ (Weapon1, ability_shoot 4 gun)
+        [ (Weapon1, ability_multishoot (Radians $ 2 * pi) 16 $ gun 2)
         , (Weapon2, ability_laser 300 10)
         , (Boost,   ability_finalBlink)
         , (Stop,    ability_stop)

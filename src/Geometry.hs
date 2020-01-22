@@ -71,11 +71,6 @@ rotateV2 (Radians dir) v2 = rotation !* v2
                   (V2 (sin dir) (cos dir))
 
 
-
-
-
-
-
 boxIntersectsBox :: Box -> Box -> Bool
 boxIntersectsBox
   (Rectangle (V2 l1 t1) (V2 w1 h1))
@@ -90,6 +85,10 @@ boxIntersectsBox
     b1 = t1 + h1
     r2 = l2 + w2
     b2 = t2 + h2
+
+
+angleOf :: V2 -> Angle
+angleOf (V2 x y) = Radians $ atan2 y x
 
 
 

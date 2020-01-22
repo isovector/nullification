@@ -41,9 +41,10 @@ data EntWorld f = World
   , eDieOnContact  :: Flag f
 
   , eAlive         :: Flag f
-  , eAge           :: Field f Time
+  , eAge           :: Field f Time  -- time alive
   , eScript        :: Field f (Task ())
   , eSpecialThing  :: Field f SpecialThing
+  , eLifetime      :: Field f Time  -- time to live
 
   , eLaser         :: Field f (Laser, Time -> Interaction)
 

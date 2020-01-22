@@ -8,6 +8,17 @@ import Linear.Metric (qd)
 import Scripts
 
 
+interact_lifetime :: Time -> Interaction
+interact_lifetime dt = do
+  time <- query eLifetime
+  case time <= 0 of
+    True  -> pure delEntity
+    False -> pure unchanged
+      { eLifetime = Set $ time - dt
+      }
+
+
+
 interact_manageHitpoints :: Interaction
 interact_manageHitpoints = do
   void interact_onlyIfOnScreen

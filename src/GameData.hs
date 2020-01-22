@@ -5,15 +5,13 @@ import Actions
 import Tasks
 import Interactions
 
-gun :: Entity
-gun = newEntity
+gun :: Time -> Entity
+gun lifetime = newEntity
   { eGfx = Just $ do
       pure $ filled red $ rect 2 2
   , eVel = Just $ V2 0 0
   , eSpeed = Just 200
-  , eHurtboxes = Just
-      [ Rectangle (V2 (-2) (-2)) $ V2 4 4
-      ]
+  , eLifetime = Just lifetime
   , eHitboxes = Just
       [ ( Rectangle (V2 (-2) (-2)) $ V2 4 4
         , interact_damage 1
@@ -38,7 +36,7 @@ turret player = newEntity
   , eScript = Just $ mconcat
       [ forever $ do
           sleep 0.5
-          action_shootAt 2 gun player
+          action_shootAt (gun 2) player
       ]
   , eHitpoints = Just 1
   , eHurtboxes = Just [Rectangle (-10) 20]

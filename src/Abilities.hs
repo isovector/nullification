@@ -35,13 +35,24 @@ ability_stop =
 --------------------------------------------------------------------------------
 -- |
 -- TODO(sandy): this could do rapid fire on abilityDown
-ability_shoot :: Time -> Entity -> Ability
-ability_shoot lifetime proto =
+ability_shoot :: Entity -> Ability
+ability_shoot proto =
   defaultAbility
-    { abilityPress = action_shoot lifetime proto
+    { abilityPress = action_shoot proto
+    }
+
+--------------------------------------------------------------------------------
+-- |
+-- TODO(sandy): this could do rapid fire on abilityDown
+ability_multishoot :: Angle -> Int -> Entity -> Ability
+ability_multishoot spread num proto =
+  defaultAbility
+    { abilityPress = action_multishot spread num proto
     }
 
 
+------------------------------------------------------------------------------
+-- |
 ability_laser :: Double -> Double -> Ability
 ability_laser dist damage =
   defaultAbility
