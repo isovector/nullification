@@ -6,14 +6,15 @@ import Interactions
 import Game.Sequoia.Color
 import Game.Sequoia.Text
 
-drawGame :: [Query Form]
-drawGame =
-  [ draw_gfx
-  , draw_lasers
-
-  -- , debug_drawHurtboxes
-
-  , draw_hp
+draw_game :: Int -> V2 -> [Game Form]
+draw_game fps camera =
+  [ pure $ toForm $ image "assets/space.png"
+  , move (-camera) . group <$> efor (entsWith eGfx) draw_gfx
+  , move (-camera) . group <$> efor (entsWith eLaser) draw_lasers
+  , move (-camera) . group <$> efor (entsWith eHitpoints) draw_hp
+  , move (V2 32 (600 - 64)) <$> draw_minimap camera
+  , move (V2 400 500) <$> draw_transmission
+  , pure $ move 20 $ draw_text green LeftAligned $ show fps
   ]
 
 

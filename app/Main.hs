@@ -1,6 +1,6 @@
 module Main where
 
-import qualified Lib as M
+import qualified Engine as M
 
 main :: IO ()
 main = M.main
