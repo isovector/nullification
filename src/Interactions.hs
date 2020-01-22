@@ -18,6 +18,16 @@ interact_lifetime dt = do
       }
 
 
+interact_sfxs :: Interaction
+interact_sfxs = do
+  void interact_onlyIfOnScreen
+  sfx <- query ePlaySfx
+  command $ Sfx sfx
+  pure unchanged
+    { ePlaySfx = Unset
+    }
+
+
 
 interact_manageHitpoints :: Interaction
 interact_manageHitpoints = do

@@ -18,6 +18,7 @@ gun lifetime = newEntity
         )
       ]
   , eDieOnContact = Just ()
+  , ePlaySfx = Just sfxShot
   }
 
 
@@ -35,6 +36,7 @@ clusterGun lifetime num child = newEntity
       action_multishot (Radians $ 2 * pi) num child
       me <- queryEnt
       command $ Edit me delEntity
+  , ePlaySfx = Just sfxMultishot
   }
 
 

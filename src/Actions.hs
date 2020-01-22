@@ -95,7 +95,6 @@ action_shootAt proto target = do
     True -> do
       parent_team <- queryMaybe eTeam
 
-      command $ Sfx sfxShot
       command $ Spawn proto
         { ePos      = Just parent_pos
         , eTeam     = parent_team
@@ -131,7 +130,6 @@ action_shoot
 action_shoot proto = do
   dir  <- query eDirection
   action_shootDir dir proto
-  command $ Sfx sfxShot
 
 
 action_multishot
@@ -148,5 +146,7 @@ action_multishot (Radians spread) num proto = do
   for_ [0 .. num - 1] $ \n -> do
     action_shootDir
       (Radians $ start_dir + (fromIntegral n + 0.5) * spread / fromIntegral num)
-      proto
+      $ case n of
+          0 -> proto
+          _ -> proto { ePlaySfx = Nothing }
 

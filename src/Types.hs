@@ -35,6 +35,8 @@ data EntWorld f = World
   , eOrigin        :: Field f V2
   , eGfx           :: Field f (Query Form)
 
+  , ePlaySfx       :: Field f (SoundBank -> Chunk)
+
   , eHitboxes      :: Field f [(Box, Interaction)]
   , eHurtboxes     :: Field f [Box]
   , eTeam          :: Field f Team
@@ -55,6 +57,8 @@ data EntWorld f = World
   , eIsCamera      :: Component f 'Unique ()
   } deriving (Generic)
 
+instance Eq (SoundBank -> Chunk) where
+  _ == _ = False
 instance Eq (Time -> Interaction) where
   _ == _ = False
 instance Eq (QueryT _1 _2 _3) where
@@ -130,6 +134,7 @@ data SoundBank = SoundBank
   , sfxBlinkStart :: Chunk
   , sfxBlinkEnd   :: Chunk
   , sfxPowerup    :: Chunk
+  , sfxMultishot  :: Chunk
   }
 
 

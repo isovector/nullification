@@ -70,6 +70,7 @@ updateGame keystate dt input = do
   emap (entsWith eVel)        $ interact_velToPos dt
   emap (entsWith eAcc)        $ interact_accToVel dt
   emap (entsWith eControlled) $ interact_controlledByPlayer dt input
+  emap (entsWith ePlaySfx)    $ interact_sfxs
   emap (uniqueEnt eIsCamera)  $ interact_focusCamera
 
   lasers <- efor (entsWith eLaser) $ do

@@ -10,6 +10,7 @@ soundBank = unsafePerformIO $ do
   sfxBlinkStart <- load "assets/sounds/enchant.ogg"
   sfxBlinkEnd   <- load "assets/sounds/warp3.ogg"
   sfxPowerup    <- load "assets/sounds/powerUp3.ogg"
+  sfxMultishot  <- load "assets/sounds/rlaunch.ogg"
   pure SoundBank {..}
 
 {-# NOINLINE soundBank #-}
