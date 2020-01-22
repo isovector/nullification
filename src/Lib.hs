@@ -277,8 +277,9 @@ run = do
         pure (gfxs, minimap)
       pure $ collage gameWidth gameHeight
            . (toForm (image "assets/space.png") :)
+           . (++ [ move (V2 400 500) $ draw_transmission "woman6" "Esra" "Hello from Nullification\nyes it can"])
            . (++ [ move (V2 32 (600 - 64)) minimap
-                 , move 20 $ draw_text $ show @Int $ round fps
+                 , move 20 $ draw_text green LeftAligned $ show @Int $ round fps
                  ])
            -- . fmap (scale 0.2)
            $ moveGroup (-camera) forms

@@ -1,4 +1,4 @@
-module Drawing (drawGame, draw_text) where
+module Drawing (drawGame, draw_text, draw_portrait, draw_transmission) where
 
 import Geometry
 import Interactions
@@ -15,6 +15,28 @@ drawGame =
   , draw_hp
   ]
 
+
+draw_portrait :: String -> Form
+draw_portrait portrait =
+  group
+    [ toForm $ image "assets/portraits/bg.png"
+    , toForm $ image $ mconcat [ "assets/portraits/", portrait, ".png" ]
+    , toForm $ image "assets/portraits/border.png"
+    ]
+
+draw_transmission :: String -> String -> String -> Form
+draw_transmission portrait name msg =
+  move (V2 ((/2) $ -width-100) (-height / 2)) $
+  group
+    [ draw_portrait portrait
+    , move (V2 (100 + width / 2) (height / 2)) $ filled (rgba 0 0 0.2 0.5) $ rect 400 100
+    , move (V2 105 (-10)) $ draw_text yellow LeftAligned name
+    , move (V2 120 15) $ scale 0.7 $ draw_text white LeftAligned msg
+    ]
+  where
+    width = 400
+    height = 100
+
 draw_gfx :: Query Form
 draw_gfx = do
   pos <- interact_onlyIfOnScreen
@@ -23,11 +45,13 @@ draw_gfx = do
   fmap (move pos . rotate dir . move (- origin)) $ join $ query eGfx
 
 
-draw_text :: String -> Form
-draw_text
+draw_text :: Color -> Alignment -> String -> Form
+draw_text c a
   = toForm
   . text
-  . color green
+  . topVAligned
+  . (\x -> x { textAlignment = a } )
+  . color c
   . monospace
   . stringText
 
@@ -37,7 +61,7 @@ draw_hp = do
   hp  <- query eHitpoints
   pure . move (pos + V2 0 38)
        . scale 0.7
-       . draw_text
+       . draw_text green CenterAligned
        . show @Int
        $ ceiling hp
 
