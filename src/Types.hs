@@ -9,13 +9,15 @@ module Types
   , Chunk
   ) where
 
-import BasePrelude
-import Game.Sequoia
-import Data.Ecstasy
-import Control.Monad.Trans.Writer.CPS
-import Control.Monad.Coroutine
-import Control.Monad.Coroutine.SuspensionFunctors
-import SDL.Mixer (Music, Chunk)
+import           BasePrelude
+import           Control.Monad.Coroutine
+import           Control.Monad.Coroutine.SuspensionFunctors
+import           Control.Monad.Trans.Writer.CPS
+import           Data.Ecstasy
+import qualified Data.Map as M
+import           Game.Sequoia
+import           Game.Sequoia.Keyboard (Key)
+import           SDL.Mixer (Music, Chunk)
 
 type Flag  f   = Component f 'Field ()
 type Field f a = Component f 'Field a
@@ -47,9 +49,9 @@ data EntWorld f = World
 
   , eOnMinimap     :: Field f (Color, Double)
 
+  , eControlled    :: Field f Controller
   , eFocused       :: Component f 'Unique ()
   , eIsCamera      :: Component f 'Unique ()
-  , eControlled    :: Flag f
   } deriving (Generic)
 
 instance Eq (QueryT _1 _2 _3) where
@@ -126,4 +128,33 @@ data SoundBank = SoundBank
   , sfxBlinkEnd   :: Chunk
   , sfxPowerup    :: Chunk
   }
+
+
+data Control
+  = Weapon1
+  | Weapon2
+  | Weapon3
+  | Shield
+  | Boost
+  | Stop
+  deriving (Eq, Ord, Show)
+
+type Controller = M.Map Control Ability
+type ControlMapping = M.Map Control Key
+
+data Ability = Ability
+  { abilityPress   :: Query ()
+  , abilityDown    :: Query ()
+  , abilityUnpress :: Query ()
+  , abilityUp      :: Query ()
+  }
+  deriving (Eq)
+
+defaultAbility :: Ability
+defaultAbility =
+  Ability
+    (pure ())
+    (pure ())
+    (pure ())
+    (pure ())
 

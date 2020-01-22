@@ -128,6 +128,8 @@ interact_hitbox hitboxes = do
 
 
 
+------------------------------------------------------------------------------
+-- | this should do DPS, not damage per FRAME
 interact_laserDamage :: [LaserInteraction] -> Interaction
 interact_laserDamage lasers = do
   pos   <- interact_onlyIfOnScreen

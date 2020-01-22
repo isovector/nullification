@@ -1,11 +1,12 @@
 module Lib (main) where
 
-import           Actions
+import           Abilities
 import           Assets
 import           Control.FRPNow hiding (when, first)
 import qualified Control.Monad.Trans.Reader as R
 import           Control.Monad.Trans.Writer.CPS
 import           Data.Ecstasy.Types
+import qualified Data.Map as M
 import           Drawing
 import qualified Game.Sequoia as S
 import           Game.Sequoia.Color
@@ -14,33 +15,52 @@ import           Game.Sequoia.Time
 import           GameData
 import           Interactions
 import           Prelude hiding (init)
+import           SDL (SDLException ())
 import qualified SDL.Mixer as SDL
-import SDL (SDLException ())
 
 
-runPlayerScript :: Query () -> Game ()
-runPlayerScript = void . efor (entsWith eControlled)
+runPlayerScript :: Ent -> Query () -> Game ()
+runPlayerScript ent = void . efor (anEnt ent)
 
 
-upgradedBlink :: Int -> Query ()
-upgradedBlink 0 = pure ()
-upgradedBlink 1 = action_blink 0.01 5000
-upgradedBlink 2 = action_blink 0.5 400
-upgradedBlink 3 = action_blink 0.5 800
+runController
+    :: (Key -> Keystate)
+    -> ControlMapping
+    -> Ent
+    -> Controller
+    -> Game ()
+runController keystate mapping ent controller =
+  void $ flip M.traverseWithKey controller $ \ctrl ability ->
+    for_ (M.lookup ctrl mapping) $ \key ->
+      runPlayerScript ent $
+        case keystate key of
+          Press   -> abilityPress   ability
+          Down    -> abilityDown    ability
+          Unpress -> abilityUnpress ability
+          Up      -> abilityUp      ability
+
+
+defaultMapping :: ControlMapping
+defaultMapping = M.fromList
+  [ (Weapon1, SpaceKey)
+  , (Weapon2, EKey)
+  , (Boost,   LeftShiftKey)
+  , (Stop,    ZKey)
+  ]
 
 
 updateGame :: (Key -> Keystate) -> Time -> V2 -> Game ()
 updateGame keystate dt input = do
-  traverse_ (\(state, key, script) ->
-                when (keystate key == state) $
-                  runPlayerScript script)
-    [ (Press, LeftShiftKey, upgradedBlink 3)
-    , (Unpress, LeftShiftKey, action_blink_unpress)
-    , (Press, SpaceKey, action_shoot 4 gun)
-    , (Press, ZKey, action_stop)
-    ]
-
   when (keystate RKey == Press && keystate LeftControlKey == Down) resetGame
+
+  let mapping = defaultMapping
+  controlled <-
+    efor (entsWith eControlled) $
+      (,)
+        <$> queryEnt
+        <*> query eControlled
+  for_ controlled $ \(ent, controller) ->
+    runController keystate mapping ent controller
 
   emap (entsWith eAge)        $ interact_age dt
   emap (entsWith eHitpoints)  $ interact_manageHitpoints
@@ -121,7 +141,12 @@ initialize = void $ do
     , eGfx = Just $ do
         pure $ toForm $ image "assets/ship.png"
     , eHurtboxes  = Just [Rectangle (V2 (-16) (-16)) $ V2 32 32]
-    , eControlled = Just ()
+    , eControlled = Just $ M.fromList
+        [ (Weapon1, ability_shoot 4 gun)
+        , (Weapon2, ability_laser 300 1)
+        , (Boost,   ability_finalBlink)
+        , (Stop,    ability_stop)
+        ]
     , eSpeed      = Just 100
     , eTeam       = Just PlayerTeam
     , eFocused    = Just ()

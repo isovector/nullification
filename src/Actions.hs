@@ -38,6 +38,7 @@ action_blink blink_time blink_speed = do
 -- Runs for the using entity
 -- TODO(sandy): This is disgusting, and does some trickery to switch from the
 -- player's query context into the blink entity's
+-- TODO(sandy): maybe we could inline this into the blink ability
 action_blink_unpress :: (CanRunCommands m, CanRunQueries m) => m ()
 action_blink_unpress = do
   parent <- queryEnt
