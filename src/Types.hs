@@ -122,6 +122,13 @@ newtype Progress = Progress Double
 
 data SpecialThing
   = BlinkFor Ent
+  | Transmission Person String
+  deriving (Eq, Ord, Show)
+
+data Person = Person
+  { personName     :: String
+  , personPortrait :: String
+  }
   deriving (Eq, Ord, Show)
 
 

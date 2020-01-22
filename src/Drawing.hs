@@ -1,5 +1,6 @@
-module Drawing (drawGame, draw_text, draw_portrait, draw_transmission) where
+module Drawing where
 
+import Constants
 import Geometry
 import Interactions
 import Game.Sequoia.Color
@@ -24,8 +25,18 @@ draw_portrait portrait =
     , toForm $ image "assets/portraits/border.png"
     ]
 
-draw_transmission :: String -> String -> String -> Form
-draw_transmission portrait name msg =
+
+draw_transmission :: Game Form
+draw_transmission = fmap (fromMaybe mempty . listToMaybe) $
+  efor (entsWith eSpecialThing) $ do
+    Transmission person msg <- query eSpecialThing
+    age <- query eAge
+    pure $ draw_transmission_gfx person
+         $ take (round $ characterDisplayPerSecond * age) msg
+
+
+draw_transmission_gfx :: Person -> String -> Form
+draw_transmission_gfx (Person name portrait) msg =
   move (V2 ((/2) $ -width-100) (-height / 2)) $
   group
     [ draw_portrait portrait
@@ -90,4 +101,24 @@ debug_drawLine (Line src dst) =
 
 debug_drawBox :: Box -> Form
 debug_drawBox = group . fmap debug_drawLine . rectLines
+
+
+
+minimapScale :: Num a => a
+minimapScale = 32
+
+
+draw_minimapBlip :: Query Form
+draw_minimapBlip = do
+  pos           <- query ePos
+  (color, size) <- query eOnMinimap
+  let size' = size * minimapScale
+  pure $ move pos $ filled color $ rect size' size'
+
+
+draw_minimap :: V2 -> Game Form
+draw_minimap camera = do
+  forms <- efor (entsWith eOnMinimap) draw_minimapBlip
+  let minimap = scale (1 / minimapScale) $ move (-camera) $  group forms
+  pure minimap
 

@@ -2,6 +2,7 @@ module Lib (main) where
 
 import           Abilities
 import           Assets
+import           Constants
 import           Control.FRPNow hiding (when, first)
 import qualified Control.Monad.Trans.Reader as R
 import           Control.Monad.Trans.Writer.CPS
@@ -92,26 +93,6 @@ updateGame keystate dt input = do
   emap (entsWith eHurtboxes) $ interact_hitbox hitboxes
 
 
-minimapScale :: Num a => a
-minimapScale = 32
-
-
-draw_minimapBlip :: Query Form
-draw_minimapBlip = do
-  pos           <- query ePos
-  (color, size) <- query eOnMinimap
-  let size' = size * minimapScale
-  pure $ move pos $ filled color $ rect size' size'
-
-
-draw_minimap :: V2 -> Game Form
-draw_minimap camera = do
-  forms <- efor (entsWith eOnMinimap) draw_minimapBlip
-  let minimap = scale (1 / minimapScale) $ move (-camera) $  group forms
-  pure minimap
-
-
-
 resetGame :: Game ()
 resetGame = do
   ref <- SystemT R.ask
@@ -121,6 +102,9 @@ resetGame = do
 
 initialize :: Game ()
 initialize = void $ do
+  -- doTransmission esra "Hello world!\nThis is a test of a long string."
+  doTransmission (Person "Karfew" "man2") "Roger that. Over and out."
+
   let cameraProto = newEntity
         { ePos      = Just $ V2 512 $ -2000
         , eIsCamera = Just ()
@@ -260,24 +244,19 @@ run = do
     fps   <- fmap (1 /) $ sample clock
     state <- sample game
     liftIO $ do
-      ((_, cameras), _) <-
-        runWriterT
-          $ yieldSystemT state
-          $ efor (uniqueEnt eIsCamera)
-          $ query ePos
+      cameras <- evalGame state $ efor (uniqueEnt eIsCamera) $ query ePos
       let camera = (fromMaybe 0 $ listToMaybe cameras) - V2 gameWidth gameHeight ^* 0.5
           moveGroup v2 = pure . move v2 . group
 
-      ((_, (forms, minimap)), _) <-
-        runWriterT
-           . yieldSystemT state
-           $ do
+      (forms, minimap, transmission) <- evalGame state $ do
         gfxs <- join <$> traverse (efor allEnts) drawGame
+        transmission <- draw_transmission
         minimap <- draw_minimap camera
-        pure (gfxs, minimap)
+        pure (gfxs, minimap, transmission)
+
       pure $ collage gameWidth gameHeight
            . (toForm (image "assets/space.png") :)
-           . (++ [ move (V2 400 500) $ draw_transmission "woman6" "Esra" "Hello from Nullification\nyes it can"])
+           . (++ [ move (V2 400 500) transmission])
            . (++ [ move (V2 32 (600 - 64)) minimap
                  , move 20 $ draw_text green LeftAligned $ show @Int $ round fps
                  ])
@@ -285,11 +264,41 @@ run = do
            $ moveGroup (-camera) forms
 
 
+evalGame
+    :: SystemState EntWorld UnderlyingMonad
+    -> Game a
+    -> IO a
+evalGame state m = do
+  ((_, a), cmds) <-
+    runWriterT $ yieldSystemT state m
+  !_ <- unless (null cmds) $ error "evalGame ran a command!"
+  pure a
+
+
+esra :: Person
+esra = Person "Esra" "woman6"
+
+
+doTransmission :: Person -> String -> Game Time
+doTransmission person msg = do
+  let wordcount = fromIntegral $ length $ words msg
+      charcount = fromIntegral $ length msg
+      wanted_time = wordcount / readingSpeedWordsPerSecond
+                  + charcount / characterDisplayPerSecond
+      time = max minTransmissionTime wanted_time
+  void $ createEntity newEntity
+    { eSpecialThing = Just $ Transmission person msg
+    , eLifetime     = Just time
+    , eAge          = Just 0
+    }
+  pure time
+
+
 getKeystate :: Bool -> Bool -> Keystate
 getKeystate False False = Up
-getKeystate False True = Press
-getKeystate True True = Down
-getKeystate True False = Unpress
+getKeystate False True  = Press
+getKeystate True  True  = Down
+getKeystate True  False = Unpress
 
 
 main :: IO ()
@@ -302,11 +311,4 @@ main
           (EngineConfig (gameWidth, gameHeight) "Nullification" black)
           (const run)
           pure
-
-
-gameWidth :: Num a => a
-gameWidth = 800
-
-gameHeight :: Num a => a
-gameHeight = 600
 
