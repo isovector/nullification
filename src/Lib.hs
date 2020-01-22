@@ -44,6 +44,7 @@ defaultMapping :: ControlMapping
 defaultMapping = M.fromList
   [ (Weapon1, SpaceKey)
   , (Weapon2, EKey)
+  , (Weapon3, FKey)
   , (Boost,   LeftShiftKey)
   , (Stop,    ZKey)
   ]
@@ -145,6 +146,7 @@ initialize = void $ do
     , eControlled = Just $ M.fromList
         [ (Weapon1, ability_multishoot (Radians $ 2 * pi) 16 $ gun 2)
         , (Weapon2, ability_laser 300 10)
+        , (Weapon3, ability_multishoot (Radians $ 2 * pi) 6 $ clusterGun 0.5 6 $ gun 2)
         , (Boost,   ability_finalBlink)
         , (Stop,    ability_stop)
         ]

@@ -20,6 +20,24 @@ gun lifetime = newEntity
   , eDieOnContact = Just ()
   }
 
+
+clusterGun :: Time -> Int -> Entity -> Entity
+clusterGun lifetime num child = newEntity
+  { eGfx = Just $ do
+      pure $ filled purple $ circle 3
+  , eVel = Just $ V2 0 0
+  , eSpeed = Just 200
+  , eHurtboxes = Just
+      [ Rectangle (-1.5) 3
+      ]
+  , eScript = Just $ do
+      sleep lifetime
+      action_multishot (Radians $ 2 * pi) num child
+      me <- queryEnt
+      command $ Edit me delEntity
+  }
+
+
 wall :: Entity
 wall = newEntity
   { eGfx = Just $ pure $ toForm $ image "assets/wall.png"
