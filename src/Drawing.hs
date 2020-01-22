@@ -38,7 +38,8 @@ draw_hp = do
   pure . move (pos + V2 0 38)
        . scale 0.7
        . draw_text
-       $ show hp
+       . show @Int
+       $ ceiling hp
 
 
 draw_lasers :: Query Form

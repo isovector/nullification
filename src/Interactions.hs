@@ -104,7 +104,7 @@ data LaserInteraction = LaserInteraction
   , liDirection   :: Angle
   , liTeam        :: Maybe Team
   , liLaser       :: Laser
-  , liInteraction :: Interaction
+  , liInteraction :: Time -> Interaction
   }
 
 
@@ -130,14 +130,14 @@ interact_hitbox hitboxes = do
 
 ------------------------------------------------------------------------------
 -- | this should do DPS, not damage per FRAME
-interact_laserDamage :: [LaserInteraction] -> Interaction
-interact_laserDamage lasers = do
+interact_laserDamage :: Time -> [LaserInteraction] -> Interaction
+interact_laserDamage dt lasers = do
   pos   <- interact_onlyIfOnScreen
   hurts <- fmap (moveBox pos) <$> query eHurtboxes
   team  <- queryDef NeutralTeam eTeam
 
   case find (flip any hurts . laserIntersection) $ filter ((/= Just team) . liTeam) lasers of
-    Just x  -> liInteraction x
+    Just x  -> liInteraction x dt
     Nothing -> pure unchanged
 
 
@@ -153,7 +153,7 @@ laserIntersection li box =
     dir = liDirection li
 
 
-interact_damage :: Int -> Interaction
+interact_damage :: Double -> Interaction
 interact_damage damage = do
   hp <- query eHitpoints
   pure unchanged

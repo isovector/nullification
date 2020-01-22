@@ -76,7 +76,7 @@ updateGame keystate dt input = do
     dir <- queryDef 0 eDirection
     (laser, action) <- query eLaser
     pure $ LaserInteraction pos dir team laser action
-  emap (entsWith eHurtboxes) $ interact_laserDamage lasers
+  emap (entsWith eHurtboxes) $ interact_laserDamage dt lasers
 
 
   hitboxes <- efor allEnts $
@@ -119,7 +119,7 @@ resetGame = do
 initialize :: Game ()
 initialize = void $ do
   let cameraProto = newEntity
-        { ePos      = Just $ V2 512 $ -1000
+        { ePos      = Just $ V2 512 $ -200
         , eIsCamera = Just ()
         }
   void $ createEntity cameraProto
@@ -134,22 +134,22 @@ initialize = void $ do
       }
 
   player <- createEntity newEntity
-    { ePos = Just $ V2 512 (-1000)
+    { ePos = Just $ V2 512 (-200)
     , eOrigin = Just $ V2 27 16
     , eDirection = Just $ Radians $ pi / 2
-    , eVel = Just $ V2 0 0
+    , eVel = Just $ V2 0 100
     , eGfx = Just $ do
         pure $ toForm $ image "assets/ship.png"
     , eHurtboxes  = Just [Rectangle (V2 (-16) (-16)) $ V2 32 32]
     , eControlled = Just $ M.fromList
         [ (Weapon1, ability_shoot 4 gun)
-        , (Weapon2, ability_laser 300 1)
+        , (Weapon2, ability_laser 300 10)
         , (Boost,   ability_finalBlink)
         , (Stop,    ability_stop)
         ]
-    , eSpeed      = Just 100
-    , eTeam       = Just PlayerTeam
-    , eFocused    = Just ()
+    , eSpeed     = Just 100
+    , eTeam      = Just PlayerTeam
+    , eFocused   = Just ()
     , eOnMinimap = Just (green, 3)
     , eHitpoints = Just 10
     }
@@ -192,7 +192,7 @@ initialize = void $ do
         { ePos = Just src
         , eLaser = Just
             ( LaserAbsPos dst
-            , interact_damage 3
+            , \dt -> interact_damage $ 50 * dt
             )
         -- , eTeam = Just EnemyTeam
         }

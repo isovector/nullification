@@ -42,11 +42,15 @@ ability_shoot lifetime proto =
     }
 
 
-ability_laser :: Double -> Int -> Ability
+ability_laser :: Double -> Double -> Ability
 ability_laser dist damage =
   defaultAbility
     { abilityPress = setSelf unchanged
-        { eLaser = Set $ (LaserRelPos $ V2 dist 0, interact_damage damage)
+        { eLaser =
+            Set
+              ( LaserRelPos $ V2 dist 0
+              , \dt -> interact_damage $ damage * dt
+              )
         }
     , abilityUnpress = setSelf unchanged
         { eLaser = Unset

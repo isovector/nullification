@@ -30,7 +30,7 @@ data EntWorld f = World
   -- TODO(sandy): facing
   , eDirection     :: Field f Angle
 
-  , eHitpoints     :: Field f Int
+  , eHitpoints     :: Field f Double
 
   , eOrigin        :: Field f V2
   , eGfx           :: Field f (Query Form)
@@ -45,7 +45,7 @@ data EntWorld f = World
   , eScript        :: Field f (Task ())
   , eSpecialThing  :: Field f SpecialThing
 
-  , eLaser         :: Field f (Laser, Interaction)
+  , eLaser         :: Field f (Laser, Time -> Interaction)
 
   , eOnMinimap     :: Field f (Color, Double)
 
@@ -54,6 +54,8 @@ data EntWorld f = World
   , eIsCamera      :: Component f 'Unique ()
   } deriving (Generic)
 
+instance Eq (Time -> Interaction) where
+  _ == _ = False
 instance Eq (QueryT _1 _2 _3) where
   _ == _ = False
 deriving instance Eq (EntWorld 'SetterOf)
