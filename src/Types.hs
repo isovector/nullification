@@ -57,7 +57,8 @@ data EntWorld f = World
 
   , eOnMinimap     :: Field f (Color, Double)
 
-  , eControlled    :: Field f Controller
+  , eControlled    :: Flag f
+  , eAbilities     :: Field f Controller
   , eFocused       :: Component f 'Unique ()
   , eIsCamera      :: Component f 'Unique ()
   } deriving (Generic)

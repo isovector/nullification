@@ -55,7 +55,7 @@ updateGame keystate dt input = do
     efor (entsWith eControlled) $
       (,)
         <$> queryEnt
-        <*> query eControlled
+        <*> query eAbilities
   for_ controlled $ \(ent, controller) ->
     runController keystate mapping ent controller
 
