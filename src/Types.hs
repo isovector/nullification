@@ -1,3 +1,4 @@
+{-# LANGUAGE DeriveAnyClass             #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# LANGUAGE NoImplicitPrelude          #-}
 {-# LANGUAGE StandaloneDeriving         #-}
@@ -15,8 +16,9 @@ import           Control.Monad.Coroutine.SuspensionFunctors
 import qualified Control.Monad.Fail as MF
 import           Control.Monad.Trans.Class (lift)
 import           Control.Monad.Trans.Writer.CPS
+import           Data.Binary (Binary)
 import           Data.Ecstasy
-import qualified Data.Map as M
+import qualified Data.Map.Strict as M
 import           Game.Sequoia
 import           Game.Sequoia.Keyboard (Key)
 import           SDL.Mixer (Music, Chunk)
@@ -187,4 +189,12 @@ data DeathState
   = MarkedForDeath
   | WaitingOnDeathScript
   deriving (Eq, Ord, Show)
+
+
+data FramePlaybackInfo = FramePlaybackInfo
+  { fpiDeltaTime :: !Time
+  , fpiDeltaKeys :: !(M.Map Key Bool)
+  }
+  deriving stock (Eq, Ord, Show, Read, Generic)
+  deriving anyclass Binary
 

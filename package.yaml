@@ -33,6 +33,7 @@ dependencies:
 - monad-coroutine
 - sdl2-mixer
 - sdl2
+- binary
 
 default-extensions:
 - DataKinds

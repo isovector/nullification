@@ -1,9 +1,12 @@
 module Engine (main) where
 
+import Data.Binary (encodeFile, decodeFile)
 import           Constants
 import           Control.FRPNow hiding (when, first)
 import           Control.Monad.Trans.Writer.CPS
 import           Data.Ecstasy.Types
+import qualified Data.Map.Strict as M
+import qualified Data.Set as S
 import           Drawing
 import qualified Game.Sequoia as S
 import           Game.Sequoia.Color
@@ -15,15 +18,25 @@ import qualified SDL.Mixer as SDL
 
 
 main :: IO ()
-main
-  = SDL.withAudio
+main = do
+  let playback_last_game = False
+
+  last_game <-
+    bool
+      (pure [])
+      (decodeFile "/tmp/game.nullification")
+      playback_last_game
+  recorded <- newIORef []
+  SDL.withAudio
         (SDL.Audio 44100 SDL.FormatS16_Sys SDL.Stereo)
         4096 $ do
-      SDL.setChannels 200
-      S.play
-          (EngineConfig (gameWidth, gameHeight) "Nullification" black)
-          (const run)
-          pure
+    SDL.setChannels 200
+    S.play
+        (EngineConfig (gameWidth, gameHeight) "Nullification" black)
+        (const $ run last_game recorded)
+        pure
+  result <- readIORef recorded
+  encodeFile "/tmp/game.nullification" $ reverse result
 
 getKeystate :: Bool -> Bool -> Keystate
 getKeystate False False = Up
@@ -59,20 +72,22 @@ evalGame state m = do
   pure a
 
 
-run :: N (B Element)
-run = do
+run :: [FramePlaybackInfo] -> IORef [FramePlaybackInfo] -> N (B Element)
+run playback recorded = do
+  init <- execGame (SystemState 0 defStorage defHooks) currentLevel
+  traceM "starting"
+  init' <- foldM (gameFrame recorded) init $ unfoldFramePlaybackInfo playback
+  traceM "done"
+
   clock        <- deltaTime <$> getClock
   keyboard     <- getKeyboard
-  old_keyboard <- sample $ delayTime clock [] keyboard
+  old_keyboard <- sample $ delayTime clock mempty keyboard
 
-  init <- execGame (SystemState 0 defStorage defHooks) currentLevel
-  (game, _) <- foldmp init $ \state -> do
-    arrs   <- sample $ arrows keyboard
+  (game, _) <- foldmp init' $ \state -> do
     dt     <- sample clock
-    kb     <- sample keyboard
     old_kb <- sample old_keyboard
-    let keystate k = getKeystate (elem k old_kb) $ elem k kb
-    execGame state $ updateGame keystate dt arrs
+    kb     <- sample keyboard
+    gameFrame recorded state (dt, old_kb, kb)
 
   poll $ do
     fps   <- fmap (1 /) $ sample clock
@@ -84,4 +99,40 @@ run = do
                    - V2 gameWidth gameHeight ^* 0.5
         sequenceA $ draw_game (round fps) camera
       pure $ collage gameWidth gameHeight gfx
+
+
+gameFrame
+    :: MonadIO m
+    => IORef [FramePlaybackInfo]
+    -> SystemState EntWorld UnderlyingMonad
+    -> (Time, S.Set Key, S.Set Key)
+    -> m (SystemState EntWorld UnderlyingMonad)
+gameFrame recorded state (dt, old_kb, kb) = do
+  let arrs = arrows kb
+  let keystate k = getKeystate (S.member k old_kb) $ S.member k kb
+  liftIO $ modifyIORef' recorded (makeFramePlaybackInfo old_kb kb dt :)
+  execGame state $ updateGame keystate dt arrs
+
+
+makeFramePlaybackInfo :: S.Set Key -> S.Set Key -> Time -> FramePlaybackInfo
+makeFramePlaybackInfo old_kb kb dt =
+  let set_difference b s1 s2 =
+        M.fromList . fmap (flip (,) b) $ S.toList $ s1 S.\\ s2
+      !keys_down = set_difference True kb old_kb
+      !keys_up   = set_difference False old_kb kb
+      !result    = FramePlaybackInfo dt $ keys_down <> keys_up
+   in seq result result
+
+
+unfoldFramePlaybackInfo :: [FramePlaybackInfo] -> [(Time, S.Set Key, S.Set Key)]
+unfoldFramePlaybackInfo = go mempty
+  where
+    go _ [] = []
+    go old_kb (FramePlaybackInfo dt delta_keys : fpis) =
+      let kb =
+            flip appEndo old_kb $ flip foldMap (M.assocs delta_keys) $ \case
+              (k, True)  -> Endo (S.insert k)
+              (k, False) -> Endo (S.delete k)
+       in (dt, old_kb, kb) : go kb fpis
+
 
