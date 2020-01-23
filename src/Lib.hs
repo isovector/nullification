@@ -100,22 +100,13 @@ initialize = void $ do
       karfrew = Person "Karfrew" "man2"
 
   let cameraProto = newEntity
-        { ePos      = Just $ V2 512 $ -2000
+        { ePos      = Just $ V2 512 $ -200
         , eIsCamera = Just ()
         }
   void $ createEntity cameraProto
 
-  void $ createEntity
-    ( collectable $ do
-        Radians angle <- query eDirection
-        pure unchanged
-          { eDirection = Set $ Radians $ angle + pi
-          }
-    ) { ePos = Just $ V2 512 (-900)
-      }
-
   player <- createEntity newEntity
-    { ePos = Just $ V2 512 (-2000)
+    { ePos = Just $ V2 512 (-200)
     , eOrigin = Just $ V2 27 16
     , eDirection = Just $ Radians $ pi / 2
     , eVel = Just $ V2 0 100
