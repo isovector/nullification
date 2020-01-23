@@ -1,9 +1,9 @@
 module Engine (main) where
 
-import Data.Binary (encodeFile, decodeFile)
 import           Constants
 import           Control.FRPNow hiding (when, first)
 import           Control.Monad.Trans.Writer.CPS
+import           Data.Binary (encodeFile, decodeFile)
 import           Data.Ecstasy.Types
 import qualified Data.Map.Strict as M
 import qualified Data.Set as S

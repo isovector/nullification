@@ -153,6 +153,7 @@ data LaserInteraction = LaserInteraction
 
 interact_hitbox :: [(V2, Maybe Team, Ent, Bool, [(Box, Interaction)])] -> Interaction
 interact_hitbox hitboxes = do
+  without eDeathState
   pos   <- interact_posIfOnScreen
   hurts <- fmap (moveBox pos) <$> query eHurtboxes
   team  <- queryDef NeutralTeam eTeam
@@ -175,6 +176,7 @@ interact_hitbox hitboxes = do
 -- | this should do DPS, not damage per FRAME
 interact_laserDamage :: Time -> [LaserInteraction] -> Interaction
 interact_laserDamage dt lasers = do
+  without eDeathState
   pos   <- interact_posIfOnScreen
   hurts <- fmap (moveBox pos) <$> query eHurtboxes
   team  <- queryDef NeutralTeam eTeam
