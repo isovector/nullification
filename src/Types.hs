@@ -16,6 +16,7 @@ import           Control.Monad.Coroutine.SuspensionFunctors
 import qualified Control.Monad.Fail as MF
 import           Control.Monad.Trans.Class (lift)
 import           Control.Monad.Trans.Writer.CPS
+import           Control.Monad.Trans.Reader (ReaderT)
 import           Data.Binary (Binary)
 import           Data.Ecstasy
 import qualified Data.Map.Strict as M
@@ -89,7 +90,7 @@ instance Eq a => Eq (Update a) where
 type Entity = EntWorld 'FieldOf
 
 
-type UnderlyingMonad = WriterT [Command] IO
+type UnderlyingMonad = WriterT [Command] (ReaderT (IORef LocalGameState) IO)
 
 type Query = QueryT EntWorld UnderlyingMonad
 type Interaction = Query (EntWorld 'SetterOf)
@@ -197,4 +198,10 @@ data FramePlaybackInfo = FramePlaybackInfo
   }
   deriving stock (Eq, Ord, Show, Read, Generic)
   deriving anyclass Binary
+
+
+data LocalGameState = LocalGameState
+  { lgsCurrentLevel :: Game ()
+  , lgsTransmissionQueue :: [(Person, String)]
+  }
 

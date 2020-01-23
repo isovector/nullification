@@ -11,8 +11,8 @@ import           SDL (SDLException ())
 import qualified SDL.Mixer as SDL
 
 
-currentLevel :: Game ()
-currentLevel = fortress
+startingLevel :: Game ()
+startingLevel = fortress
 
 
 runPlayerScript :: Ent -> Query () -> Game ()
@@ -48,7 +48,7 @@ defaultMapping = M.fromList
 
 updateGame :: (Key -> Keystate) -> Time -> V2 -> Game ()
 updateGame keystate dt input = do
-  when (keystate RKey == Press && keystate LeftControlKey == Down) $ resetGame currentLevel
+  when (keystate RKey == Press && keystate LeftControlKey == Down) resetGame
 
   let mapping = defaultMapping
   controlled <-
@@ -97,9 +97,14 @@ runCommand (Edit ent proto) = setEntity ent proto
 runCommand (Sfx sfx) = liftIO $ void $ try @SDLException $ SDL.play $ sfx soundBank
 
 
-resetGame :: Game () -> Game ()
-resetGame level = do
-  ref <- SystemT R.ask
-  liftIO $ writeIORef ref $ SystemState 0 defStorage defHooks
+resetGame :: Game ()
+resetGame = do
+  lgs_ref <- SystemT $ lift $ lift $ R.ask
+  LocalGameState level _ <- liftIO $ readIORef lgs_ref
+  system_state_ref <- SystemT R.ask
+
+  liftIO $ do
+    writeIORef system_state_ref $ SystemState 0 defStorage defHooks
+    writeIORef lgs_ref          $ LocalGameState level []
   level
 
