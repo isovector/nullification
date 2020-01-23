@@ -7,7 +7,7 @@ module Game.Sequoia.Graphics where
 
 import           Data.Data
 import qualified Data.Text as T
-import           Game.Sequoia.Color (Color, black)
+import           Game.Sequoia.Color (Color, black, white)
 import           Game.Sequoia.Types
 import           Graphics.Rendering.Cairo.Matrix (Matrix (..))
 
@@ -133,6 +133,7 @@ data FormStyle
 
 data CompositeStyle = CompositeStyle
   { compositeAlpha :: Double
+  , compositeColorMod :: Maybe Color
   }
   deriving (Show, Eq, Data)
 
@@ -149,7 +150,10 @@ form style = Form
   }
 
 withAlpha :: Double -> Form -> Form
-withAlpha alpha f = form $ CompositeForm (CompositeStyle alpha) f
+withAlpha alpha f = form $ CompositeForm (CompositeStyle alpha Nothing) f
+
+withColorMod :: Color -> Form -> Form
+withColorMod c f = form $ CompositeForm (CompositeStyle 1 (Just c)) f
 
 fill :: FillStyle -> Shape -> Form
 fill style = form . ShapeForm (Right style)
@@ -269,4 +273,5 @@ ngon n r = PolygonShape (map (\i -> (r * cos (t * i), r * sin (t * i))) [0 .. fr
   where
     m = fromIntegral n
     t = 2 * pi / m
+
 

@@ -410,11 +410,21 @@ renderForm state Form { .. } = withTransform formScaleX formScaleY formTheta for
       mapM_ (renderForm state) forms
       Cairo.restore
 
-    CompositeForm (CompositeStyle alpha) form -> do
+    CompositeForm (CompositeStyle alpha m_color) form -> do
       Cairo.pushGroup
+
       renderForm state form
-      Cairo.popGroupToSource
-      Cairo.paintWithAlpha alpha
+
+      case m_color of
+        Nothing -> do
+          Cairo.popGroupToSource
+          Cairo.paintWithAlpha alpha
+        Just color -> do
+          Cairo.withGroupPattern $ \pattern -> do
+            Cairo.setSource pattern
+            Cairo.paint
+            unpackColFor color Cairo.setSourceRGBA
+            Cairo.mask pattern
 
 
 
