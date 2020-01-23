@@ -6,8 +6,8 @@ import Control.Monad.Coroutine (resume)
 import Control.Monad.Coroutine.SuspensionFunctors
 
 
-startGlobalScript :: CanRunCommands m => Task () -> m ()
-startGlobalScript script =
+async :: CanRunCommands m => Task () -> m ()
+async script =
   command $ Spawn newEntity
     { eScript = Just script
     }

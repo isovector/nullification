@@ -50,6 +50,9 @@ data EntWorld f = World
   , eSpecialThing  :: Field f SpecialThing
   , eLifetime      :: Field f Time  -- time to live
 
+  , eDeathState    :: Field f DeathState
+  , eOnDeathScript  :: Field f (Task ())
+
   , eLaser         :: Field f (Laser, Time -> Interaction)
 
   , eOnMinimap     :: Field f (Color, Double)
@@ -177,4 +180,10 @@ defaultAbility =
     (pure ())
     (pure ())
     (pure ())
+
+
+data DeathState
+  = MarkedForDeath
+  | WaitingOnDeathScript
+  deriving (Eq, Ord, Show)
 

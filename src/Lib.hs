@@ -89,14 +89,15 @@ updateGame keystate dt input = do
       <*> query eHitboxes
   emap (entsWith eHurtboxes) $ interact_hitbox hitboxes
 
+  emap (entsWith eDeathState) $ interact_waitForDeathScript
+  emap (entsWith eDeathState) $ interact_startDeathScript
+
 
 
 initialize :: Game ()
 initialize = void $ do
-  startGlobalScript $ doConversation
-    [ (esra, "Welcome to the game!")
-    , (Person "Karfrew" "man2", "Roger that. Over and out.")
-    ]
+  let esra = Person "Esra" "woman6"
+      karfrew = Person "Karfrew" "man2"
 
   let cameraProto = newEntity
         { ePos      = Just $ V2 512 $ -2000
@@ -133,6 +134,13 @@ initialize = void $ do
     , eFocused   = Just ()
     , eOnMinimap = Just (green, 3)
     , eHitpoints = Just 10
+    , eOnDeathScript = Just $ do
+        async $ do
+          sleep betweenTransmissionsTime
+          doConversation
+            [ (karfrew, "They came from.... behind.")
+            , (esra, "Bummer dude.")
+            ]
     }
 
   let mkWall x y =
@@ -189,9 +197,6 @@ runCommand (Spawn proto) = void $ createEntity proto
 runCommand (Edit ent proto) = setEntity ent proto
 runCommand (Sfx sfx) = liftIO $ void $ try @SDLException $ SDL.play $ sfx soundBank
 
-
-esra :: Person
-esra = Person "Esra" "woman6"
 
 
 doTransmission :: CanRunCommands m => Person -> String -> m Time

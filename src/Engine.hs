@@ -1,4 +1,4 @@
-module Engine where
+module Engine (main) where
 
 import           Constants
 import           Control.FRPNow hiding (when, first)

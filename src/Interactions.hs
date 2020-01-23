@@ -8,8 +8,27 @@ import Linear.Metric (qd)
 import Scripts
 
 
+interact_startDeathScript :: Interaction
+interact_startDeathScript = do
+  MarkedForDeath <- query eDeathState
+  queryMaybe eOnDeathScript >>= \case
+    Nothing -> pure actuallyDelEntity
+    Just script -> do
+      pure unchanged
+        { eDeathState = Set WaitingOnDeathScript
+        , eScript     = Set script
+        }
+
+interact_waitForDeathScript :: Interaction
+interact_waitForDeathScript = do
+  WaitingOnDeathScript <- query eDeathState
+  Nothing <- queryMaybe eScript
+  pure actuallyDelEntity
+
+
 interact_lifetime :: Time -> Interaction
 interact_lifetime dt = do
+  interact_onlyIfAlive
   time <- query eLifetime
   case time <= 0 of
     True  -> pure delEntity
@@ -31,6 +50,7 @@ interact_sfxs = do
 
 interact_manageHitpoints :: Interaction
 interact_manageHitpoints = do
+  interact_onlyIfAlive
   interact_globalOrIfOnScreen
   hp <- query eHitpoints
   case hp <= 0 of
@@ -203,4 +223,7 @@ interact_globalOrIfOnScreen = do
           . subquery (uniqueEnt eIsCamera)
           $ query ePos
       guard $ qd pos camera_pos <= 800 * 800
+
+interact_onlyIfAlive :: Query ()
+interact_onlyIfAlive = without eDeathState
 

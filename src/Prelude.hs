@@ -21,11 +21,11 @@ import           Control.Monad.Trans.Class (lift)
 import           Control.Monad.Trans.Reader
 import           Control.Monad.Trans.Writer.CPS
 import qualified Data.Ecstasy as E
-import           Data.Ecstasy hiding (query, queryEnt, queryMaybe, queryDef, allEnts, newEntity, queryUnique, queryTarget, subquery)
+import           Data.Ecstasy hiding (query, queryEnt, queryMaybe, queryDef, allEnts, newEntity, queryUnique, queryTarget, subquery, delEntity)
 import           Data.Ecstasy.Internal.Deriving
 import           Data.Ecstasy.Types
 import qualified Data.Ecstasy.Types as E
-import           Game.Sequoia hiding (form, change, play)
+import           Game.Sequoia hiding (form, change, play, async)
 import           Game.Sequoia.Window (MouseButton (..))
 import           Linear (norm, normalize, (*^), (^*), quadrance, M22, project)
 import           Types
@@ -100,6 +100,15 @@ allEnts = entsWith eAlive
 
 newEntity :: EntWorld 'FieldOf
 newEntity = E.newEntity { eAlive = Just () }
+
+delEntity :: EntWorld 'SetterOf
+delEntity = unchanged
+  { eDeathState = Set MarkedForDeath
+  , eScript     = Unset
+  }
+
+actuallyDelEntity :: EntWorld 'SetterOf
+actuallyDelEntity = E.delEntity
 
 
 yield :: EntWorld 'SetterOf -> Task ()
