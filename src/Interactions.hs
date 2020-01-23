@@ -1,5 +1,6 @@
 module Interactions where
 
+import Constants
 import Geometry
 import Control.Monad.Coroutine (resume)
 import Control.Monad.Coroutine.SuspensionFunctors
@@ -61,6 +62,7 @@ interact_manageHitpoints = do
 interact_focusCamera :: Interaction
 interact_focusCamera = do
   with eIsCamera
+  speed <- query eSpeed
   is_focused <- queryUnique eFocused
   case is_focused of
     Nothing -> do
@@ -70,16 +72,16 @@ interact_focusCamera = do
     Just (focused, _) -> do
       pos <- query ePos
       focus_pos <- focus focused $ query ePos
-      pure $ case qd pos focus_pos <= 400 of
+      pure $ case qd pos focus_pos <= cameraMaximumSnapQd of
         True ->
           unchanged
-            { ePos = Set focus_pos
+            { ePos    = Set focus_pos
             , eScript = Unset
-            , eVel = Unset
+            , eVel    = Unset
             }
         False ->
           unchanged
-            { eScript = Set $ script_goTo focus_pos 800 1
+            { eScript = Set $ script_goTo focus_pos speed 1
             }
 
 

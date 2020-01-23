@@ -1,7 +1,6 @@
 module Constants where
 
 
-
 gameWidth :: Num a => a
 gameWidth = 800
 
@@ -21,4 +20,7 @@ minTransmissionTime = 2
 
 betweenTransmissionsTime :: Time
 betweenTransmissionsTime = 0.3
+
+cameraMaximumSnapQd :: Double
+cameraMaximumSnapQd = 20 * 20
 
