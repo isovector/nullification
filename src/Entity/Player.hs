@@ -4,8 +4,8 @@ import           Abilities
 import qualified Data.Map as M
 import           GameData
 
-playerEntity :: Entity
-playerEntity = newEntity
+playerProto :: Entity
+playerProto = newEntity
   { eOrigin    = Just $ V2 27 16
   , eDirection = Just $ Radians $ pi / 2
   , eVel       = Just $ V2 0 0

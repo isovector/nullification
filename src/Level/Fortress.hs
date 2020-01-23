@@ -16,7 +16,7 @@ fortress = do
     { ePos      = Just $ V2 512 $ -200
     }
 
-  player <- createEntity playerEntity
+  player <- createEntity playerProto
     { ePos = Just $ V2 512 (-200)
     , eVel = Just $ V2 0 100
     , eOnDeathScript = Just $ do
