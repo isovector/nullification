@@ -5,9 +5,9 @@ packages:
 
 extra-deps:
 - sdl2-2.5.0.0
-- '../sequoia'
-- '../FRPNow'
-- '../ecstasy'
+- 'lib/sequoia'
+- 'lib/FRPNow'
+- 'lib/ecstasy'
 - cairo-0.13.6.1
 - pango-0.13.6.1
 - glib-0.13.7.1
