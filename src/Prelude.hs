@@ -9,11 +9,13 @@ module Prelude
   , module Linear
   , module Game.Sequoia.Window
   , module Control.Monad.Trans.Class
+  , module Game.Sequoia.Color
+  , module Game.Sequoia.Keyboard
   , module Types
   , request
   ) where
 
-import           BasePrelude hiding (group, rotate, lazy, index, uncons, loop, inRange, yield, Down (..))
+import           BasePrelude hiding (group, rotate, lazy, index, uncons, loop, inRange, yield, Down (..), complement)
 import           Control.Lens (view)
 import           Control.Monad.Coroutine.SuspensionFunctors (request)
 import           Control.Monad.IO.Class (MonadIO (..))
@@ -26,6 +28,8 @@ import           Data.Ecstasy.Internal.Deriving
 import           Data.Ecstasy.Types
 import qualified Data.Ecstasy.Types as E
 import           Game.Sequoia hiding (form, change, play, async)
+import           Game.Sequoia.Color
+import           Game.Sequoia.Keyboard (Key (..))
 import           Game.Sequoia.Window (MouseButton (..))
 import           Linear (norm, normalize, (*^), (^*), quadrance, M22, project)
 import           Types
