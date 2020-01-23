@@ -1,9 +1,10 @@
 module Level.Fortress where
 
-import Entity.Player
 import Constants
-import Interactions
+import Entity.Camera
+import Entity.Player
 import GameData
+import Interactions
 import Scripts
 import Tasks
 
@@ -11,12 +12,9 @@ fortress :: Game ()
 fortress = do
   let esra = Person "Esra" "woman6"
       karfrew = Person "Karfrew" "man2"
-
-  let cameraProto = newEntity
-        { ePos      = Just $ V2 512 $ -200
-        , eIsCamera = Just ()
-        }
   void $ createEntity cameraProto
+    { ePos      = Just $ V2 512 $ -200
+    }
 
   player <- createEntity playerEntity
     { ePos = Just $ V2 512 (-200)
