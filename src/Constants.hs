@@ -18,9 +18,6 @@ characterDisplayPerSecond = 60
 minTransmissionTime :: Time
 minTransmissionTime = 2
 
-betweenTransmissionsTime :: Time
-betweenTransmissionsTime = 0.3
-
 cameraMaximumSnapQd :: Double
 cameraMaximumSnapQd = 20 * 20
 

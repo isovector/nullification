@@ -9,6 +9,7 @@ import           Level.Fortress (fortress)
 import           Prelude hiding (init)
 import           SDL (SDLException ())
 import qualified SDL.Mixer as SDL
+import Scripts
 
 
 startingLevel :: Game ()
@@ -46,6 +47,19 @@ defaultMapping = M.fromList
   ]
 
 
+playQueuedTransmissions :: Game ()
+playQueuedTransmissions = do
+  getQueuedTransmission >>= \case
+    Nothing -> pure ()
+    Just (person, msg) -> do
+      transmissions <- efor (entsWith eSpecialThing) $ do
+        Transmission _ _ <- query eSpecialThing
+        pure ()
+      when (null transmissions) $ do
+        dequeueTransmission
+        void $ script_internal_startTransmission person msg
+
+
 updateGame :: (Key -> Keystate) -> Time -> V2 -> Game ()
 updateGame keystate dt input = do
   when (keystate RKey == Press && keystate LeftControlKey == Down) resetGame
@@ -58,6 +72,8 @@ updateGame keystate dt input = do
         <*> query eAbilities
   for_ controlled $ \(ent, controller) ->
     runController keystate mapping ent controller
+
+  playQueuedTransmissions
 
   emap (entsWith eAge)        $ interact_age dt
   emap (entsWith eLifetime)   $ interact_lifetime dt
@@ -94,7 +110,12 @@ updateGame keystate dt input = do
 runCommand :: Command -> Game ()
 runCommand (Spawn proto) = void $ createEntity proto
 runCommand (Edit ent proto) = setEntity ent proto
-runCommand (Sfx sfx) = liftIO $ void $ try @SDLException $ SDL.play $ sfx soundBank
+runCommand (Sfx sfx) =
+  liftIO $ void $ try @SDLException $ SDL.play $ sfx soundBank
+runCommand (Transmit person msg) = do
+  lgs_ref <- SystemT $ lift $ lift $ R.ask
+  liftIO $ modifyIORef' lgs_ref $
+    field @"lgsTransmissionQueue" <>~ [(person, msg)]
 
 
 resetGame :: Game ()
@@ -107,4 +128,16 @@ resetGame = do
     writeIORef system_state_ref $ SystemState 0 defStorage defHooks
     writeIORef lgs_ref          $ LocalGameState level []
   level
+
+
+getQueuedTransmission :: Game (Maybe (Person, String))
+getQueuedTransmission = do
+  lgs_ref <- SystemT $ lift $ lift $ R.ask
+  lgs <- liftIO $ readIORef lgs_ref
+  pure $ listToMaybe $ lgsTransmissionQueue lgs
+
+dequeueTransmission :: Game ()
+dequeueTransmission = do
+  lgs_ref <- SystemT $ lift $ lift $ R.ask
+  liftIO $ modifyIORef' lgs_ref $ field @"lgsTransmissionQueue" %~ drop 1
 

@@ -128,6 +128,7 @@ data Command
   = Spawn Entity
   | Edit Ent (EntWorld 'SetterOf)
   | Sfx (SoundBank -> Chunk)
+  | Transmit Person String
 
 newtype Progress = Progress Double
   deriving (Eq, Ord, Show)
@@ -204,4 +205,5 @@ data LocalGameState = LocalGameState
   { lgsCurrentLevel :: Game ()
   , lgsTransmissionQueue :: [(Person, String)]
   }
+  deriving (Generic)
 

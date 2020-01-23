@@ -13,10 +13,11 @@ module Prelude
   , module Game.Sequoia.Keyboard
   , module Types
   , request
+  , field
   ) where
 
 import           BasePrelude hiding (group, rotate, lazy, index, uncons, loop, inRange, yield, Down (..), complement)
-import           Control.Lens (view)
+import           Control.Lens (view, (%~), (.~), (<>~), (+~), (-~))
 import           Control.Monad.Coroutine.SuspensionFunctors (request)
 import           Control.Monad.IO.Class (MonadIO (..))
 import           Control.Monad.Trans.Class (lift)
@@ -27,6 +28,7 @@ import           Data.Ecstasy hiding (query, queryEnt, queryMaybe, queryDef, all
 import           Data.Ecstasy.Internal.Deriving
 import           Data.Ecstasy.Types
 import qualified Data.Ecstasy.Types as E
+import           Data.Generics.Product (field)
 import           Game.Sequoia hiding (form, change, play, async)
 import           Game.Sequoia.Color
 import           Game.Sequoia.Keyboard (Key (..))

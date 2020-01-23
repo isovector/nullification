@@ -2,6 +2,7 @@ module Engine (main) where
 
 import           Constants
 import           Control.FRPNow hiding (when, first)
+import           Control.Monad.Trans.Reader
 import           Control.Monad.Trans.Writer.CPS
 import           Data.Binary (encodeFile, decodeFile)
 import           Data.Ecstasy.Types
@@ -15,7 +16,6 @@ import           Game.Sequoia.Time
 import           Lib
 import           Prelude hiding (init)
 import qualified SDL.Mixer as SDL
-import Control.Monad.Trans.Reader
 
 
 main :: IO ()
@@ -38,6 +38,7 @@ main = do
         pure
   result <- readIORef recorded
   encodeFile "/tmp/game.nullification" $ reverse result
+
 
 getKeystate :: Bool -> Bool -> Keystate
 getKeystate False False = Up

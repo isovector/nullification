@@ -1,12 +1,11 @@
 module Level.Fortress where
 
-import Constants
 import Entity.Camera
 import Entity.Player
 import GameData
 import Interactions
-import Scripts
 import Tasks
+
 
 fortress :: Game ()
 fortress = do
@@ -21,11 +20,8 @@ fortress = do
     , eVel = Just $ V2 0 100
     , eOnDeathScript = Just $ do
         async $ do
-          sleep betweenTransmissionsTime
-          doConversation
-            [ (karfrew, "They came from.... behind.")
-            , (esra, "Bummer dude.")
-            ]
+          command $ Transmit karfrew "They came from.... behind."
+          command $ Transmit esra "BYE BYE BYE"
     }
 
   let mkWall x y =

@@ -37,8 +37,14 @@ script_die :: Task ()
 script_die = yield delEntity
 
 
-doTransmission :: CanRunCommands m => Person -> String -> m Time
-doTransmission person msg = do
+------------------------------------------------------------------------------
+-- | should not be called by hand!
+script_internal_startTransmission
+    :: CanRunCommands m
+    => Person
+    -> String
+    -> m Time
+script_internal_startTransmission person msg = do
   let wordcount = fromIntegral $ length $ words msg
       charcount = fromIntegral $ length msg
       wanted_time = wordcount / readingSpeedWordsPerSecond
@@ -50,12 +56,4 @@ doTransmission person msg = do
     , eAge          = Just 0
     }
   pure time
-
-
-doConversation :: [(Person, String)] -> Task ()
-doConversation [] = pure ()
-doConversation ((person, msg) : convo) = do
-  time <- doTransmission person msg
-  sleep $ time + betweenTransmissionsTime
-  doConversation convo
 

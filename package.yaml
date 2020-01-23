@@ -34,6 +34,7 @@ dependencies:
 - sdl2-mixer
 - sdl2
 - binary
+- generic-lens
 
 default-extensions:
 - DataKinds
