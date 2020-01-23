@@ -1,6 +1,5 @@
 module GameData where
 
-import Game.Sequoia.Color
 import Actions
 import Tasks
 import Interactions

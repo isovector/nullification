@@ -65,7 +65,7 @@ run = do
   keyboard     <- getKeyboard
   old_keyboard <- sample $ delayTime clock [] keyboard
 
-  init <- execGame (SystemState 0 defStorage defHooks) initialize
+  init <- execGame (SystemState 0 defStorage defHooks) currentLevel
   (game, _) <- foldmp init $ \state -> do
     arrs   <- sample $ arrows keyboard
     dt     <- sample clock

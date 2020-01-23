@@ -1,20 +1,18 @@
 module Lib where
 
-import           Abilities
 import           Assets
-import           Constants
 import qualified Control.Monad.Trans.Reader as R
 import           Data.Ecstasy.Types
 import qualified Data.Map as M
-import           Game.Sequoia.Color
-import           Game.Sequoia.Keyboard
-import           Game.Sequoia.Time
-import           GameData
 import           Interactions
+import           Level.Fortress (fortress)
 import           Prelude hiding (init)
 import           SDL (SDLException ())
 import qualified SDL.Mixer as SDL
-import           Tasks
+
+
+currentLevel :: Game ()
+currentLevel = fortress
 
 
 runPlayerScript :: Ent -> Query () -> Game ()
@@ -50,7 +48,7 @@ defaultMapping = M.fromList
 
 updateGame :: (Key -> Keystate) -> Time -> V2 -> Game ()
 updateGame keystate dt input = do
-  when (keystate RKey == Press && keystate LeftControlKey == Down) resetGame
+  when (keystate RKey == Press && keystate LeftControlKey == Down) $ resetGame currentLevel
 
   let mapping = defaultMapping
   controlled <-
@@ -93,107 +91,15 @@ updateGame keystate dt input = do
   emap (entsWith eDeathState) $ interact_startDeathScript
 
 
-
-initialize :: Game ()
-initialize = void $ do
-  let esra = Person "Esra" "woman6"
-      karfrew = Person "Karfrew" "man2"
-
-  let cameraProto = newEntity
-        { ePos      = Just $ V2 512 $ -200
-        , eIsCamera = Just ()
-        }
-  void $ createEntity cameraProto
-
-  player <- createEntity newEntity
-    { ePos = Just $ V2 512 (-200)
-    , eOrigin = Just $ V2 27 16
-    , eDirection = Just $ Radians $ pi / 2
-    , eVel = Just $ V2 0 100
-    , eGfx = Just $ do
-        pure $ toForm $ image "assets/ship.png"
-    , eHurtboxes  = Just [Rectangle (V2 (-16) (-16)) $ V2 32 32]
-    , eControlled = Just $ M.fromList
-        [ (Weapon1, ability_multishoot (Radians $ 2 * pi) 16 $ gun 2)
-        , (Weapon2, ability_laser 300 10)
-        , (Weapon3, ability_multishoot (Radians $ 2 * pi) 6 $ clusterGun 0.5 6 $ gun 2)
-        , (Boost,   ability_finalBlink)
-        , (Stop,    ability_stop)
-        ]
-    , eSpeed     = Just 100
-    , eTeam      = Just PlayerTeam
-    , eFocused   = Just ()
-    , eOnMinimap = Just (green, 3)
-    , eHitpoints = Just 10
-    , eOnDeathScript = Just $ do
-        async $ do
-          sleep betweenTransmissionsTime
-          doConversation
-            [ (karfrew, "They came from.... behind.")
-            , (esra, "Bummer dude.")
-            ]
-    }
-
-  let mkWall x y =
-        void $ createEntity wall
-          { ePos = Just $ V2 (x * 127) (y * 127)
-          }
-
-
-  for_ [-3..2] $ \x -> mkWall x 0
-
-  traverse_ (uncurry mkWall) $ (,) <$> [-3, 21] <*> [0..10]
-
-  for_ [5..13] $ \x -> mkWall x 0
-  for_ [16..21] $ \x -> mkWall x 0
-
-  mkWall (-1) 5
-  mkWall 19 5
-
-  for_ [2..7] $ \x -> mkWall x 6
-  for_ [11..16] $ \x -> mkWall x 7
-  mkWall 2 7
-  mkWall 2 8
-  mkWall 16 8
-  mkWall 16 9
-
-  for_ [2..9] $ \x -> mkWall x 9
-  for_ [9..16] $ \x -> mkWall x 10
-
-  let mkTurret x y =
-        void $ createEntity (turret player)
-          { ePos = Just $ V2 (x * 128) (y * 128)
-          }
-
-  traverse_ (uncurry mkTurret) $ (,) <$> [1.75, 2.25, 4.75, 5.25] <*> [-1, 1]
-  traverse_ (uncurry mkTurret) $ (,) <$> (fmap (11 +) [1.75, 2.25, 4.75, 5.25]) <*> [-1, 1]
-
-  let laserFence src dst = newEntity
-        { ePos = Just src
-        , eLaser = Just
-            ( LaserAbsPos dst
-            , \dt -> interact_damage $ 50 * dt
-            )
-        -- , eTeam = Just EnemyTeam
-        }
-      mkLaserFence x1 y1 x2 y2 =
-        void $ createEntity $
-          laserFence (V2 (x1 * 128) (y1 * 128))
-                     (V2 (x2 * 128) (y2 * 128))
-  traverse_ (\(x, y) -> mkLaserFence x y (x + 3) y) $ (,) <$> [2, 13] <*> [-0.1, 0.1]
-
-
 runCommand :: Command -> Game ()
 runCommand (Spawn proto) = void $ createEntity proto
 runCommand (Edit ent proto) = setEntity ent proto
 runCommand (Sfx sfx) = liftIO $ void $ try @SDLException $ SDL.play $ sfx soundBank
 
 
-
-
-resetGame :: Game ()
-resetGame = do
+resetGame :: Game () -> Game ()
+resetGame level = do
   ref <- SystemT R.ask
   liftIO $ writeIORef ref $ SystemState 0 defStorage defHooks
-  initialize
+  level
 
