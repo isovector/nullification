@@ -190,28 +190,6 @@ runCommand (Sfx sfx) = liftIO $ void $ try @SDLException $ SDL.play $ sfx soundB
 
 
 
-doTransmission :: CanRunCommands m => Person -> String -> m Time
-doTransmission person msg = do
-  let wordcount = fromIntegral $ length $ words msg
-      charcount = fromIntegral $ length msg
-      wanted_time = wordcount / readingSpeedWordsPerSecond
-                  + charcount / characterDisplayPerSecond
-      time = max minTransmissionTime wanted_time
-  command $ Spawn newEntity
-    { eSpecialThing = Just $ Transmission person msg
-    , eLifetime     = Just time
-    , eAge          = Just 0
-    }
-  pure time
-
-
-doConversation :: [(Person, String)] -> Task ()
-doConversation [] = pure ()
-doConversation ((person, msg) : convo) = do
-  time <- doTransmission person msg
-  sleep $ time + betweenTransmissionsTime
-  doConversation convo
-
 
 resetGame :: Game ()
 resetGame = do
