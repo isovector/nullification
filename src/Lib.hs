@@ -6,14 +6,15 @@ import           Data.Ecstasy.Types
 import qualified Data.Map as M
 import           Interactions
 import           Level.Fortress (fortress)
+import           Level.MainMenu (mainMenu)
 import           Prelude hiding (init)
 import           SDL (SDLException ())
 import qualified SDL.Mixer as SDL
-import Scripts
+import           Scripts
 
 
 startingLevel :: Game ()
-startingLevel = fortress
+startingLevel = mainMenu
 
 
 runPlayerScript :: Ent -> Query () -> Game ()
