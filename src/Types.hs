@@ -35,6 +35,7 @@ data EntWorld f = World
   , eSpeed         :: Field f Double
   -- TODO(sandy): facing
   , eDirection     :: Field f Angle
+  , eRotateSpeed   :: Field f Angle
 
   , eHitpoints     :: Field f Double
 

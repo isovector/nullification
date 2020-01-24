@@ -137,9 +137,9 @@ interact_accToVel dt = do
 
 interact_controlledByPlayer :: Time -> V2 -> Interaction
 interact_controlledByPlayer dt arrs = do
-  let rot_speed = 2
   with eControlled
   Radians facing <- query eDirection
+  Radians rot_speed <- queryDef (Radians 2) eRotateSpeed
   speed <- query eSpeed
 
   pure unchanged
