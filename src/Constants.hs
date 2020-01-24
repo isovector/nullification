@@ -21,3 +21,7 @@ minTransmissionTime = 2
 cameraMaximumSnapQd :: Double
 cameraMaximumSnapQd = 20 * 20
 
+drawVelocityCutoffQd :: Double
+drawVelocityCutoffQd = 80
+
+

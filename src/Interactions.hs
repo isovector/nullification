@@ -93,10 +93,33 @@ interact_age dt = do
     }
 
 
+interact_drag :: Time -> Interaction
+interact_drag dt = do
+  drag_rate <- query eDragRate
+  vel <- query eVel
+  guard $ vel /= 0
+  acc <- queryMaybe eAcc
+  void interact_posIfOnScreen
+
+  let neg_vel = normalize $ vel ^* (-1)
+      vel_qd = quadrance vel
+
+  case maybe True (== 0) acc && vel_qd <= drawVelocityCutoffQd of
+    -- Stop completely if we are not accelerating and our velocity is low
+    True -> do
+      pure unchanged
+        { eVel = Set 0
+        }
+    False ->
+      pure unchanged
+        { eVel = Set $ vel + neg_vel ^* (drag_rate * vel_qd * dt)
+        }
+
+
 interact_velToPos :: Time -> Interaction
 interact_velToPos dt = do
-  pos <- interact_posIfOnScreen
   vel <- query eVel
+  pos <- interact_posIfOnScreen
   pure unchanged
     { ePos = Set $ pos + dt *^ vel
     }
@@ -104,9 +127,9 @@ interact_velToPos dt = do
 
 interact_accToVel :: Time -> Interaction
 interact_accToVel dt = do
-  void interact_posIfOnScreen
   vel <- query eVel
   acc <- query eAcc
+  void interact_posIfOnScreen
   pure unchanged
     { eVel = Set $ vel + dt *^ acc
     }
@@ -117,7 +140,7 @@ interact_controlledByPlayer dt arrs = do
   let rot_speed = 2
   with eControlled
   Radians facing <- query eDirection
-  speed  <- query eSpeed
+  speed <- query eSpeed
 
   pure unchanged
     { eAcc = Set $ negate $ speed * view _y arrs *^ angle facing
@@ -213,7 +236,7 @@ interact_posIfOnScreen = do
     fmap listToMaybe
       . subquery (uniqueEnt eIsCamera)
       $ query ePos
-  guard $ qd pos camera_pos <= 800 * 800
+  guard $ qd pos camera_pos <= gameWidth * gameWidth
   pure pos
 
 

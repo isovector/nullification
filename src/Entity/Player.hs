@@ -9,6 +9,7 @@ playerProto = newEntity
   { eOrigin    = Just $ V2 27 16
   , eDirection = Just $ Radians $ pi / 2
   , eVel       = Just $ V2 0 0
+  , eDragRate  = Just 0.03
   , eGfx       = Just $ do
       pure $ toForm $ image "assets/ship.png"
   , eHurtboxes = Just [Rectangle (V2 (-16) (-16)) $ V2 32 32]
@@ -20,7 +21,7 @@ playerProto = newEntity
       , (Stop,    ability_stop)
       ]
   , eControlled = Just ()
-  , eSpeed      = Just 100
+  , eSpeed      = Just 600
   , eTeam       = Just PlayerTeam
   , eFocused    = Just ()
   , eOnMinimap  = Just (green, 3)

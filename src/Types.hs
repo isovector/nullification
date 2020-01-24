@@ -30,6 +30,7 @@ type Field f a = Component f 'Field a
 data EntWorld f = World
   { ePos           :: Field f V2
   , eVel           :: Field f V2
+  , eDragRate      :: Field f Double
   , eAcc           :: Field f V2
   , eSpeed         :: Field f Double
   -- TODO(sandy): facing

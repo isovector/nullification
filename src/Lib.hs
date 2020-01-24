@@ -14,7 +14,7 @@ import           Scripts
 
 
 startingLevel :: Game ()
-startingLevel = mainMenu
+startingLevel = fortress
 
 
 runPlayerScript :: Ent -> Query () -> Game ()
@@ -81,6 +81,7 @@ updateGame keystate dt input = do
   emap (entsWith eHitpoints)  $ interact_manageHitpoints
   emap (entsWith eScript)     $ interact_runScript dt
   emap (entsWith eVel)        $ interact_velToPos dt
+  emap (entsWith eDragRate)   $ interact_drag dt
   emap (entsWith eAcc)        $ interact_accToVel dt
   emap (entsWith eControlled) $ interact_controlledByPlayer dt input
   emap (entsWith ePlaySfx)    $ interact_sfxs
