@@ -1,7 +1,6 @@
 module Level.MainMenu where
 
 import Drawing
-import Constants
 import Entity.Camera
 import Tasks
 
@@ -15,13 +14,15 @@ mainMenu = do
   void $ createEntity newEntity
     { ePos = Just $ V2 (-300) 140
     , eGfx = Just $ do
-        pure $ move (-280) $ toForm $ image "assets/planet.png"
+        pure $ move (-280) $ withAlpha 0.5 $ toForm $ image "assets/planet.png"
     }
 
   void $ createEntity newEntity
-    { ePos = Just $ V2 0 (-230)
+    { ePos = Just $ V2 0 0
     , eGfx = Just $ do
-        pure $ draw_text white CenterAligned "N U L L I F I C A T I O N"
+        pure $ move (V2 0 (-230)) $ draw_text white CenterAligned "N U L L I F I C A T I O N"
+    , eFocused = Just ()
+    , eVel = Just $ V2 (-1) 0
     }
 
   void $ createEntity $ shipProto 80     37  1.4
@@ -102,6 +103,7 @@ shipProto y vel size = newEntity
       pure $ withColorMod black $ scale size $ toForm $ image "assets/ship.png"
   , eSpeed     = Just vel
   , eScript    = Just $ forever $ do
+      sleep 0.1
       V2 x _ <- query ePos
       case (x <= (-w)) of
         True -> do

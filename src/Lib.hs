@@ -5,16 +5,10 @@ import qualified Control.Monad.Trans.Reader as R
 import           Data.Ecstasy.Types
 import qualified Data.Map as M
 import           Interactions
-import           Level.Fortress (fortress)
-import           Level.MainMenu (mainMenu)
 import           Prelude hiding (init)
 import           SDL (SDLException ())
 import qualified SDL.Mixer as SDL
 import           Scripts
-
-
-startingLevel :: Game ()
-startingLevel = fortress
 
 
 runPlayerScript :: Ent -> Query () -> Game ()

@@ -16,6 +16,11 @@ import           Game.Sequoia.Time
 import           Lib
 import           Prelude hiding (init)
 import qualified SDL.Mixer as SDL
+import           Level.Fortress (fortress)
+import           Level.MainMenu (mainMenu)
+
+startingLevel :: Game ()
+startingLevel = mainMenu
 
 
 main :: IO ()
