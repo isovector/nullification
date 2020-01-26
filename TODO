@@ -1,3 +1,4 @@
 - compress last game
 - get replays working with drawing code!
-
+- only mark for death if they have a death script
+- do the cairo drawing directly in sequoia instead of Forms and shit

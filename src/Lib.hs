@@ -121,7 +121,7 @@ resetGame = do
   system_state_ref <- SystemT R.ask
 
   liftIO $ do
-    writeIORef system_state_ref $ SystemState 0 defStorage defHooks
+    writeIORef system_state_ref $ SystemState 0 defStorage
     writeIORef lgs_ref          $ LocalGameState level []
   level
 

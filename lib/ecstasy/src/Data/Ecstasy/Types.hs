@@ -46,37 +46,22 @@ instance Show Ent where
 
 ------------------------------------------------------------------------------
 -- | The internal state of the 'SystemT' monad.
-data SystemState w m = SystemState
+data SystemState w = SystemState
   { _ssNextId :: {-# UNPACK #-} !Int
-  , _ssWorld  :: w ('WorldOf m)
-  , _ssHooks  :: {-# UNPACK #-} !(Hooks w m)
+  , _ssWorld  :: w 'WorldOf
   } deriving (Generic)
 
-ssNextId :: Lens' (SystemState w m) Int
-ssNextId f (SystemState a b c) = (\a' -> SystemState a' b c) <$> f a
+ssNextId :: Lens' (SystemState w) Int
+ssNextId f (SystemState a b) = (\a' -> SystemState a' b) <$> f a
 
-ssWorld :: Lens' (SystemState w m) (w ('WorldOf m))
-ssWorld f (SystemState a b c) = (\b' -> SystemState a b' c) <$> f b
-
-ssHooks :: Lens' (SystemState w m) (Hooks w m)
-ssHooks f (SystemState a b c) = (\c' -> SystemState a b c') <$> f c
-
-
-------------------------------------------------------------------------------
--- | A datastructure holding hooks into ecstasy's entity management.
-data Hooks w m = Hooks
-  { hookNewEnt :: Ent -> SystemT w m ()
-  , hookDelEnt :: Ent -> SystemT w m ()
-  } deriving (Generic)
-
-defHooks :: Monad m => Hooks w m
-defHooks = Hooks (const $ pure ()) (const $ pure ())
+ssWorld :: Lens' (SystemState w) (w 'WorldOf)
+ssWorld f (SystemState a b) = (\b' -> SystemState a b') <$> f b
 
 
 ------------------------------------------------------------------------------
 -- | A monad transformer over an ECS given a world 'w'.
 newtype SystemT w m a = SystemT
-  { runSystemT' :: ReaderT (IORef (SystemState w m)) m a
+  { runSystemT' :: ReaderT (IORef (SystemState w)) m a
   }
   deriving ( Functor
            , Applicative
@@ -98,14 +83,11 @@ instance MonadReader r m => MonadReader r (SystemT w m) where
 ------------------------------------------------------------------------------
 -- | A computation to run over a particular entity.
 newtype QueryT w m a = QueryT
-  { runQueryT' :: ReaderT (Ent, SystemState w m) (MaybeT m) a
+  { runQuery' :: ReaderT (Ent, SystemState w) (MaybeT m) a
   }
   deriving ( Functor
            , Applicative
            , Monad
-           , MonadState s
-           , MonadWriter ww
-           , MonadIO
            , Alternative
            , MonadPlus
            , MonadFail
@@ -114,28 +96,13 @@ newtype QueryT w m a = QueryT
 instance MonadTrans (QueryT w) where
   lift = QueryT . lift . lift
 
-instance MonadReader r m => MonadReader r (QueryT w m) where
-  ask = QueryT $ lift ask
-  local f = QueryT . runQueryT' . local f
-
-
-------------------------------------------------------------------------------
--- | A collection of methods necessary to dispatch reads and writes to
--- a 'Virtual' component.
-data VTable m a = VTable
-  { -- | Get the value of an entity's component.
-    vget :: !(Ent -> m (Maybe a))
-
-    -- | Update the value of an entity's component.
-  , vset :: !(Ent -> Update a -> m ())
-  }
 
 
 ------------------------------------------------------------------------------
 -- | Data kind used to parameterize the ECS record.
 data StorageType
   = FieldOf   -- ^ Used to describe the actual entity.
-  | WorldOf (Type -> Type)  -- ^ Used to construct the world's storage.
+  | WorldOf   -- ^ Used to construct the world's storage.
   | SetterOf  -- ^ Used to construct a setter to update an entity.
 
 
@@ -144,7 +111,6 @@ data StorageType
 data ComponentType
   = Field      -- ^ This component can be owned by any entity.
   | Unique     -- ^ This component can be owned by only a single entity at a time.
-  | Virtual    -- ^ This component is owned by another system.
 
 
 ------------------------------------------------------------------------------
@@ -161,26 +127,23 @@ data Update a
 type family Component (s :: StorageType)
                       (c :: ComponentType)
                       (a :: Type) :: Type where
-  Component 'FieldOf  c      a = Maybe a
-  Component 'SetterOf c      a = Update a
+  Component 'FieldOf  c       a = Maybe a
+  Component 'SetterOf c       a = Update a
 
-  Component ('WorldOf m) 'Field   a = IntMap a
-  Component ('WorldOf m) 'Unique  a = Maybe (Int, a)
-  Component ('WorldOf m) 'Virtual a = VTable m a
+  Component 'WorldOf 'Field   a = IntMap a
+  Component 'WorldOf 'Unique  a = Maybe (Int, a)
 
 
 ------------------------------------------------------------------------------
--- | The inverse of 'Component ('WorldOf m)' -- used to prove 'IsInjective'
-type family Inverse (m :: Type -> Type)
-                    (r :: Type) :: ComponentType where
-  Inverse m (IntMap a)       = 'Field
-  Inverse m (Maybe (Int, a)) = 'Unique
-  Inverse m (VTable m a)     = 'Virtual
+-- | The inverse of 'Component 'WorldOf' -- used to prove 'IsInjective'
+type family Inverse (r :: Type) :: (ComponentType, Type) where
+  Inverse (IntMap a)       = '( 'Field, a)
+  Inverse (Maybe (Int, a)) = '( 'Unique, a)
 
 ------------------------------------------------------------------------------
 -- | A proof that 'c' is injective.
-class (c ~ Inverse m (Component ('WorldOf m) c a))
-    => IsInjective m (c :: ComponentType) a
-instance (c ~ Inverse m (Component ('WorldOf m) c a))
-    => IsInjective m (c :: ComponentType) a
+class ('(c, a) ~ Inverse (Component 'WorldOf c a))
+    => IsInjective (c :: ComponentType) a
+instance ('(c, a) ~ Inverse (Component 'WorldOf c a))
+    => IsInjective (c :: ComponentType) a
 

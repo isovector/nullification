@@ -20,7 +20,7 @@ import           Level.Fortress (fortress)
 import           Level.MainMenu (mainMenu)
 
 startingLevel :: Game ()
-startingLevel = mainMenu
+startingLevel = fortress
 
 
 main :: IO ()
@@ -57,9 +57,9 @@ getKeystate True  False = Unpress
 execGame
   :: MonadIO m
   => IORef LocalGameState
-  -> SystemState EntWorld UnderlyingMonad
+  -> SystemState EntWorld
   -> SystemT EntWorld UnderlyingMonad ()
-  -> m (SystemState EntWorld UnderlyingMonad)
+  -> m (SystemState EntWorld)
 execGame lgs state m = do
   let runIt s = liftIO . fmap (first fst) . flip runReaderT lgs . runWriterT . yieldSystemT s
   (state', cmds)   <- runIt state m
@@ -72,7 +72,7 @@ execGame lgs state m = do
 -- | Run enough of the Game monad to do something pure -- usually for drawing
 evalGame
     :: IORef LocalGameState
-    -> SystemState EntWorld UnderlyingMonad
+    -> SystemState EntWorld
     -> Game a
     -> IO a
 evalGame lgs state m = do
@@ -85,7 +85,7 @@ run :: [FramePlaybackInfo] -> IORef [FramePlaybackInfo] -> N (B Element)
 run playback recorded = do
   lgs <- liftIO $ newIORef $ LocalGameState startingLevel []
 
-  init <- execGame lgs (SystemState 0 defStorage defHooks) resetGame
+  init <- execGame lgs (SystemState 0 defStorage) resetGame
   init' <- foldM (gameFrame lgs recorded) init $ unfoldFramePlaybackInfo playback
 
   clock        <- deltaTime <$> getClock
@@ -114,9 +114,9 @@ gameFrame
     :: MonadIO m
     => IORef LocalGameState
     -> IORef [FramePlaybackInfo]
-    -> SystemState EntWorld UnderlyingMonad
+    -> SystemState EntWorld
     -> (Time, S.Set Key, S.Set Key)
-    -> m (SystemState EntWorld UnderlyingMonad)
+    -> m (SystemState EntWorld)
 gameFrame lgs recorded state (dt, old_kb, kb) = do
   let arrs = arrows kb
   let keystate k = getKeystate (S.member k old_kb) $ S.member k kb

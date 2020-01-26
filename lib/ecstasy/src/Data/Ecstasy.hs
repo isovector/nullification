@@ -58,7 +58,6 @@ module Data.Ecstasy
   -- $traversals
   , emap
   , efor
-  , eover
   , unchanged
   , delEntity
 
@@ -83,7 +82,6 @@ module Data.Ecstasy
   , without
   , queryEnt
   , queryUnique
-  , querySelf
   , queryMaybe
   , queryFlag
   , queryDef
@@ -93,12 +91,8 @@ module Data.Ecstasy
   , Update (..)
   , maybeToUpdate
 
-  -- * Introducing effects
-  , surgery
-
   -- * Miscellany
   , Ent ()
-  , VTable (..)
 
   -- * Re-exports
   , Generic ()

@@ -24,6 +24,7 @@ import           Game.Sequoia
 import           Game.Sequoia.Keyboard (Key)
 import           SDL.Mixer (Music, Chunk)
 
+
 type Flag  f   = Component f 'Field ()
 type Field f a = Component f 'Field a
 

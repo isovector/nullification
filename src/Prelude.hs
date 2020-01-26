@@ -55,27 +55,33 @@ command = commands . pure
 
 class (Monad m, MonadFail m) => CanRunQueries m where
   query
-      :: ( GetField c, Inverse UnderlyingMonad (Component ('WorldOf UnderlyingMonad) c a) ~ c)
-      => (EntWorld ('WorldOf UnderlyingMonad) -> Component ('WorldOf UnderlyingMonad) c a)
+      :: ( GetField c
+         , IsInjective c a
+         )
+      => (EntWorld 'WorldOf -> Component 'WorldOf c a)
       -> m a
   queryUnique
-      :: (EntWorld ('WorldOf UnderlyingMonad) -> Component ('WorldOf UnderlyingMonad) 'Unique a)
+      :: (EntWorld 'WorldOf -> Component 'WorldOf 'Unique a)
       -> m (Maybe (Ent, a))
   queryMaybe
-      :: (GetField c, Inverse UnderlyingMonad (Component ('WorldOf UnderlyingMonad) c a) ~ c)
-      => (EntWorld ('WorldOf UnderlyingMonad) -> Component ('WorldOf UnderlyingMonad) c a)
+      :: ( GetField c
+         , IsInjective c a
+         )
+      => (EntWorld 'WorldOf -> Component 'WorldOf c a)
       -> m (Maybe a)
   queryDef
-      :: (GetField c, Inverse UnderlyingMonad (Component ('WorldOf UnderlyingMonad) c a) ~ c)
+      :: ( GetField c
+         , IsInjective c a
+         )
       => a
-      -> (EntWorld ('WorldOf UnderlyingMonad) -> Component ('WorldOf UnderlyingMonad) c a)
+      -> (EntWorld 'WorldOf -> Component 'WorldOf c a)
       -> m a
   queryEnt
       :: m Ent
   queryTarget
-      :: EntTarget EntWorld UnderlyingMonad -> m [Ent]
+      :: EntTarget EntWorld -> m [Ent]
   subquery
-      :: EntTarget EntWorld UnderlyingMonad
+      :: EntTarget EntWorld
       -> Query a
       -> m [a]
   focus :: Ent -> Query a -> m a
@@ -88,7 +94,7 @@ instance CanRunQueries Query where
   queryDef    = E.queryDef
   queryEnt    = E.queryEnt
   queryTarget = E.queryTarget
-  focus e m   = E.QueryT $ local (first $ const e) $ runQueryT' m
+  focus e m   = E.QueryT $ local (first $ const e) $ runQuery' m
 
 instance CanRunQueries Task where
   query       = lift . E.query
@@ -98,10 +104,10 @@ instance CanRunQueries Task where
   queryDef    = (lift .) . E.queryDef
   queryEnt    = lift E.queryEnt
   queryTarget = lift . E.queryTarget
-  focus e m   = lift . E.QueryT $ local (first $ const e) $ runQueryT' m
+  focus e m   = lift . E.QueryT $ local (first $ const e) $ runQuery' m
 
 
-allEnts :: MonadIO m => EntTarget EntWorld m
+allEnts :: EntTarget EntWorld
 allEnts = entsWith eAlive
 
 newEntity :: EntWorld 'FieldOf

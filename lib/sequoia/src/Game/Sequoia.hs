@@ -48,6 +48,7 @@ import qualified Graphics.Rendering.Pango as Pango
 import qualified SDL.Raw as SDL
 import           System.Endian (fromBE32)
 import           System.FilePath.Posix (normalise)
+import           System.Mem (performMinorGC)
 
 
 data EngineConfig = EngineConfig
@@ -138,9 +139,9 @@ rebuildTexture Engine {..} size = do
 
 
 render :: Engine -> Element -> (Int, Int) -> IO ()
-render e@(Engine { .. }) ps size@(w, h) =
+render e@(Engine { .. }) ps size@(w, h) = do
     alloca $ \pixelsptr ->
-    alloca $ \pitchptr  -> do
+      alloca $ \pitchptr  -> do
         rebuildTexture e size
         texture <- readIORef buffer
         SDL.lockTexture texture nullPtr pixelsptr pitchptr
@@ -162,6 +163,7 @@ render e@(Engine { .. }) ps size@(w, h) =
         SDL.renderClear renderer
         SDL.renderCopy renderer texture nullPtr nullPtr
         SDL.renderPresent renderer
+    performMinorGC
 
 
 createMask :: FilePath -> IO (Cairo.Surface, Int, Int)
