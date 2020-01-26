@@ -82,6 +82,7 @@ updateGame keystate dt input = do
   emap (uniqueEnt eIsCamera)  $ interact_focusCamera
 
   lasers <- efor (entsWith eLaser) $ do
+    interact_onlyIfAlive
     pos  <- interact_posIfOnScreen
     team <- queryMaybe eTeam
     dir  <- queryDef 0 eDirection
@@ -90,7 +91,8 @@ updateGame keystate dt input = do
   emap (entsWith eHurtboxes) $ interact_laserDamage dt lasers
 
 
-  hitboxes <- efor (entsWith eHitboxes) $
+  hitboxes <- efor (entsWith eHitboxes) $ do
+    interact_onlyIfAlive
     (,,,,)
       <$> interact_posIfOnScreen
       <*> queryMaybe eTeam
