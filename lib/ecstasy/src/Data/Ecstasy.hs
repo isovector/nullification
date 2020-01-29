@@ -58,6 +58,7 @@ module Data.Ecstasy
   -- $traversals
   , emap
   , efor
+  , equeryset
   , unchanged
   , delEntity
 

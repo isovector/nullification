@@ -13,7 +13,7 @@ packages:
     hackage: inspection-testing-0.3
 snapshots:
 - completed:
-    size: 507596
-    url: https://raw.githubusercontent.com/commercialhaskell/stackage-snapshots/master/lts/11/9.yaml
-    sha256: 42f472dbf06482da1b3319241f3e3b3593a45bd7d4f537d2789f21386b9b2ad3
-  original: lts-11.9
+    size: 523443
+    url: https://raw.githubusercontent.com/commercialhaskell/stackage-snapshots/master/lts/14/0.yaml
+    sha256: 283773e7120f5446d961eab35ea95c9af9c24187cc178537bd29273200a05171
+  original: lts-14.0

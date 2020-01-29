@@ -38,6 +38,8 @@ library
                  , Data.Ecstasy.Types
                  , Data.Ecstasy.Internal
                  , Data.Ecstasy.Internal.Deriving
+  other-modules: Data.KEndo
+
   -- other-extensions:
   build-depends:       base >=4.9 && <5, containers, mtl, transformers, kan-extensions, microlens
   hs-source-dirs:      src

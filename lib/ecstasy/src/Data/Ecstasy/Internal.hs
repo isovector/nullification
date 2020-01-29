@@ -29,10 +29,11 @@ import           Data.Ecstasy.Types hiding (unEnt)
 import           Data.Foldable (for_)
 import           Data.IORef
 import qualified Data.IntMap as IM
-import           Data.Maybe (catMaybes)
+import           Data.KEndo
+import           Data.Maybe (catMaybes, fromMaybe)
 import           Data.Traversable (for)
 import           GHC.Generics
-import           Lens.Micro ((.~))
+import           Lens.Micro ((.~), (%~), (&))
 
 
 ------------------------------------------------------------------------------
@@ -60,29 +61,6 @@ class (Monad m, MonadIO m, HasWorld' world) => HasWorld world m where
          $ T.unEnt e
   {-# INLINEABLE getEntity #-}
 
-  ----------------------------------------------------------------------------
-  -- | Updates an 'Ent' in the world given its setter.
-  setEntity
-      :: Ent
-      -> world 'SetterOf
-      -> SystemT world m ()
-  default setEntity
-      :: ( GSetEntity (Rep (world 'SetterOf))
-                      (Rep (world 'WorldOf))
-         , Generic (world 'WorldOf)
-         , Generic (world 'SetterOf)
-         )
-      => Ent
-      -> world 'SetterOf
-      -> SystemT world m ()
-  setEntity e s = do
-    w <- getWorld
-    !x <- pure
-        . to
-        . gSetEntity (from s) (T.unEnt e)
-        $ from w
-    modify $ ssWorld .~ x
-  {-# INLINEABLE setEntity #-}
 
 
 class HasWorld' world where
@@ -147,6 +125,25 @@ class HasWorld' world where
   delEntity = def @'False
   {-# INLINEABLE delEntity #-}
 
+  updateWorld
+    :: Ent
+    -> world 'SetterOf
+    -> world 'WorldOf
+    -> world 'WorldOf
+  default updateWorld
+    :: ( GSetEntity (Rep (world 'SetterOf)) (Rep (world 'WorldOf))
+       , Generic (world 'SetterOf)
+       , Generic (world 'WorldOf)
+       )
+    => Ent
+    -> world 'SetterOf
+    -> world 'WorldOf
+    -> world 'WorldOf
+  updateWorld e s w =
+    let !x = to . gSetEntity (from s) (T.unEnt e) $ from w
+     in x
+
+
 
 instance ( Generic (world 'SetterOf)
          , Generic (world 'FieldOf)
@@ -157,6 +154,8 @@ instance ( Generic (world 'SetterOf)
          , GDefault 'False (Rep (world 'SetterOf))
          , GDefault 'True  (Rep (world 'SetterOf))
          , GDefault 'True  (Rep (world 'WorldOf))
+         , GSetEntity (Rep (world 'SetterOf))
+                      (Rep (world 'WorldOf))
          ) => HasWorld' world
 
 
@@ -170,10 +169,10 @@ instance ( HasWorld' world
          , GDefault 'False (Rep (world 'SetterOf))
          , GDefault 'True  (Rep (world 'SetterOf))
          , GDefault 'True  (Rep (world 'WorldOf))
-         , GSetEntity (Rep (world 'SetterOf))
-                      (Rep (world 'WorldOf))
          , GGetEntity (Rep (world 'WorldOf))
                       (Rep (world 'FieldOf))
+         , GSetEntity (Rep (world 'SetterOf))
+                      (Rep (world 'WorldOf))
          , Monad m
          , MonadIO m
          ) => HasWorld world m
@@ -241,6 +240,45 @@ emap t f = do
     sets <- lift $ unQueryT f e cs
     for_ sets $ setEntity e
 {-# INLINEABLE emap #-}
+
+
+------------------------------------------------------------------------------
+-- | Run a set of separate queries over each entity that matchets the
+-- 'EntTarget'. This is asymptoically faster than calling 'emap' for each query
+-- individually.
+equeryset
+    :: ( HasWorld world m
+       , Monad m
+       , Foldable t
+       )
+    => EntTarget world
+    -> t (QueryT world m (world 'SetterOf))
+    -> SystemT world m ()
+equeryset t qset = do
+  world <- gets id
+  let es = t world
+  for_ es $ \e -> do
+    runQuerySet e qset
+
+
+runQuerySet
+    :: ( HasWorld world m
+       , Monad m
+       , Foldable t
+       )
+    => Ent
+    -> t (QueryT world m (world 'SetterOf))
+    -> SystemT world m ()
+runQuerySet ent qset = do
+  w  <- gets id
+  SystemState _ w' <-
+    flip appKEndo w $ flip foldMap qset $ \q -> KEndo $ \world -> do
+      sets <- lift $ unQueryT q ent world
+      pure $ case sets of
+        Nothing -> world
+        Just setter ->
+          world & ssWorld %~ updateWorld ent setter
+  modify $ ssWorld .~ w'
 
 
 ------------------------------------------------------------------------------
@@ -468,7 +506,7 @@ modify
     -> SystemT world m ()
 modify f = do
   ref <- SystemT R.ask
-  liftIO $ modifyIORef ref f
+  liftIO $ modifyIORef' ref f
 
 
 ------------------------------------------------------------------------------
@@ -508,4 +546,20 @@ anEnt = pure . pure
 maybeToUpdate :: Maybe a -> Update a
 maybeToUpdate Nothing  = Unset
 maybeToUpdate (Just a) = Set a
+
+
+----------------------------------------------------------------------------
+-- | Updates an 'Ent' in the world given its setter.
+setEntity
+    :: ( HasWorld' world
+       , Monad m
+       , MonadIO m
+       )
+    => Ent
+    -> world 'SetterOf
+    -> SystemT world m ()
+setEntity e s = do
+  w <- getWorld
+  modify $ ssWorld .~ updateWorld e s w
+{-# INLINEABLE setEntity #-}
 
