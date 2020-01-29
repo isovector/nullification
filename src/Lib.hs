@@ -1,8 +1,10 @@
 module Lib where
 
 import           Assets
+import           Constants
 import qualified Control.Monad.Trans.Reader as R
 import           Data.Ecstasy.Types
+import qualified Data.IntMap as IM
 import qualified Data.Map as M
 import           Interactions
 import           Prelude hiding (init)
@@ -55,11 +57,19 @@ playQueuedTransmissions = do
         void $ script_internal_startTransmission person msg
 
 
-updateGame :: (Key -> Keystate) -> Time -> V2 -> Game ()
-updateGame keystate dt input = do
-  when (keystate RKey == Press && keystate LeftControlKey == Down) resetGame
 
-  let mapping = defaultMapping
+optimizedEmap
+     :: (EntWorld 'WorldOf -> IM.IntMap a)
+     -> Query (EntWorld 'SetterOf)
+     -> SystemT EntWorld UnderlyingMonad ()
+optimizedEmap target = emap $ entsWith target
+
+
+dispatchController
+    :: (Key -> Keystate)
+     -> ControlMapping
+     -> Game ()
+dispatchController keystate mapping = do
   controlled <-
     efor (entsWith eControlled) $
       (,)
@@ -68,17 +78,25 @@ updateGame keystate dt input = do
   for_ controlled $ \(ent, controller) ->
     runController keystate mapping ent controller
 
+
+updateGame :: (Key -> Keystate) -> Time -> V2 -> Game ()
+updateGame keystate dt input = do
+  when (keystate RKey == Press && keystate LeftControlKey == Down) resetGame
+
+  let mapping = defaultMapping
+  dispatchController keystate mapping
+
   playQueuedTransmissions
 
-  emap (entsWith eAge)        $ interact_age dt
-  emap (entsWith eLifetime)   $ interact_lifetime dt
-  emap (entsWith eHitpoints)  $ interact_manageHitpoints
-  emap (entsWith eScript)     $ interact_runScript dt
-  emap (entsWith eVel)        $ interact_velToPos dt
-  emap (entsWith eDragRate)   $ interact_drag dt
-  emap (entsWith eAcc)        $ interact_accToVel dt
-  emap (entsWith eControlled) $ interact_controlledByPlayer dt input
-  emap (entsWith ePlaySfx)    $ interact_sfxs
+  optimizedEmap eAge        $ interact_age dt
+  optimizedEmap eLifetime   $ interact_lifetime dt
+  optimizedEmap eHitpoints  $ interact_manageHitpoints
+  optimizedEmap eScript     $ interact_runScript dt
+  optimizedEmap eVel        $ interact_velToPos dt
+  optimizedEmap eDragRate   $ interact_drag dt
+  optimizedEmap eAcc        $ interact_accToVel dt
+  optimizedEmap eControlled $ interact_controlledByPlayer dt input
+  optimizedEmap ePlaySfx    $ interact_sfxs
   emap (uniqueEnt eIsCamera)  $ interact_focusCamera
 
   lasers <- efor (entsWith eLaser) $ do
@@ -138,4 +156,11 @@ dequeueTransmission :: Game ()
 dequeueTransmission = do
   lgs_ref <- SystemT $ lift $ lift $ R.ask
   liftIO $ modifyIORef' lgs_ref $ field @"lgsTransmissionQueue" %~ drop 1
+
+
+getCameraPos :: Game V2
+getCameraPos = do
+  cameras <- efor (uniqueEnt eIsCamera) $ query ePos
+  pure $ (fromMaybe 0 $ listToMaybe cameras)
+       - V2 gameWidth gameHeight ^* 0.5
 
